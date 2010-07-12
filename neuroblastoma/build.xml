@@ -1,0 +1,102 @@
+<project
+    name="Neuroblastoma"
+    default="build"
+    basedir=".">
+
+    <property file="./build.properties"/>
+
+    <property name="jar" value="neuroblast.jar"/>
+
+    <property name="srcdir" value="./src"/>
+    <property name="builddir" value="./build"/>
+    <property name="distdir" value="./jars"/>
+    <property name="includes" value="./build-includes"/>
+
+    <property file="${includes}/${os.name}-${os.arch}.properties" />
+
+    <!-- Internal target - Preparations for building. -->
+    <target name="prepare"> 
+    	<mkdir dir="${distdir}" />
+        <mkdir dir="${builddir}" />
+        <mkdir dir="${builddir}/headers" />
+    </target>
+
+    <path id="default.classpath">
+		<fileset dir="external">
+			<include name="*.jar" />
+		</fileset>
+    </path>
+
+    <target name="compile" depends="prepare">
+	
+	<javac 	classpathref="default.classpath"
+		destdir="${builddir}"
+                srcdir="${srcdir}"
+                debug="true"
+                includes="nbia/**/*.java"/>
+    </target>
+
+    <target name="build-native-headers" depends="compile">	
+	<javah 	classpath="${builddir}"
+		destdir="${builddir}/headers"
+		force="yes"
+		class="nbia.kernels.Scale"/> 
+    </target>
+
+    <target name="build-native" depends="build-native-headers">
+
+<!--	
+	<exec executable="make">
+		<arg value="-f"/>
+		<arg value="native.makefile"/>
+		<arg value="video4linux1"/>
+	</exec>
+
+-->
+                <echo message="${native.compiler.options} ${native.compiler.includes} ${native.compiler.input} ${native.compiler.output}"/>
+
+
+        <exec executable="${native.compiler}">
+                <arg line="${native.compiler.options} ${native.compiler.includes} ${native.compiler.input} ${native.compiler.output}"/>
+	</exec>
+   </target>
+
+
+    <!-- Internal target - Builds the JAR file -->
+    <target name="jar" depends="compile">
+
+	<delete failonerror="false" file="${distdir}/${jar}" />
+
+	<jar 	jarfile="${distdir}/${jar}"
+                basedir="${builddir}"
+		includes="**">
+       		<manifest>
+			<attribute name="Built-By" value="${user.name}"/>
+		</manifest>
+	</jar>
+
+    </target>
+
+    <target name="show"> 
+	<echo message="OS name   : ${os.name}"/>
+        <echo message="OS arch   : ${os.arch}"/>
+        <echo message="jdk home  : ${jdk.home}"/>
+        <echo message="version   : ${kernel.version}"/>
+    </target>
+
+    <target name="build" depends="show,clean,prepare,compile,build-native-headers,jar">
+    </target>
+
+    <!-- remove all generated code -->
+    <target name="clean" description="Removes the ${distdir} directory">
+        <delete failonerror="false" dir="${builddir}" />
+        <delete failonerror="false" dir="${distdir}" />
+        <delete failonerror="false" file="libEEP.so" />
+    </target>
+
+    <target name="distclean" depends="clean">
+         <delete failonerror="false" dir="./build-eclipse" />
+         <delete failonerror="false" file="${version}.zip"/>
+    </target>
+
+</project>

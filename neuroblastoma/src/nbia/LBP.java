@@ -3,6 +3,7 @@ package nbia;
 import ibis.cohort.ActivityIdentifier;
 import ibis.cohort.Context;
 import ibis.cohort.SimpleActivity;
+import ibis.cohort.context.UnitContext;
 import ibis.imaging4j.Image;
 
 public class LBP extends SimpleActivity {
@@ -11,7 +12,7 @@ public class LBP extends SimpleActivity {
     private final Image imageIn;
     
     public LBP(ActivityIdentifier parent, Image imageIn) {
-        super(Context.ANY);
+        super(new UnitContext("GPU"));
         this.parent = parent;
         this.imageIn = imageIn;
     }

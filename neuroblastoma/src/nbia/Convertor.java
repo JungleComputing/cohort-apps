@@ -4,19 +4,18 @@ import nbia.kernels.Conversion;
 import ibis.cohort.ActivityIdentifier;
 import ibis.cohort.Context;
 import ibis.cohort.SimpleActivity;
+import ibis.cohort.context.UnitContext;
 import ibis.imaging4j.Image;
 
 public class Convertor extends SimpleActivity {
 
     private final ActivityIdentifier parent;
     private final Image imageIn;
-    //private final String type;
     
     public Convertor(ActivityIdentifier parent, Image imageIn) {
-        super(Context.ANY);
+        super(new UnitContext("GPU"));
         this.parent = parent;
         this.imageIn = imageIn;
-    //    this.type = type;
     }
     
     private Image convert() throws Exception {
@@ -30,10 +29,12 @@ public class Convertor extends SimpleActivity {
         // Convert to correct colorspace here
         Image tmp = convert();
         
-        // Create LBP activity & submit
-        cohort.submit(new LBP(parent, tmp));
+        ActivityIdentifier id = cohort.submit(new Classifier(parent));
         
         // Create Stat activity & submit
-        cohort.submit(new Statistics(parent, tmp));        
+        cohort.submit(new Statistics(id, tmp));        
+    
+        // Create LBP activity & submit
+        cohort.submit(new LBP(id, tmp));
     }
 }

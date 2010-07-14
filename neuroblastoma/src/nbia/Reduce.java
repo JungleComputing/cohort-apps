@@ -3,6 +3,7 @@ package nbia;
 import ibis.cohort.ActivityIdentifier;
 import ibis.cohort.Context;
 import ibis.cohort.SimpleActivity;
+import ibis.cohort.context.UnitContext;
 
 public class Reduce extends SimpleActivity {
 
@@ -10,7 +11,7 @@ public class Reduce extends SimpleActivity {
     private final Result input;
     
     public Reduce(ActivityIdentifier parent, Result input) { 
-        super(Context.ANY);
+        super(new UnitContext("CPU"));
         this.parent = parent;
         this.input = input;
     }

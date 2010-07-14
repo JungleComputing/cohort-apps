@@ -4,16 +4,17 @@ import nbia.kernels.Scale;
 import ibis.cohort.ActivityIdentifier;
 import ibis.cohort.Context;
 import ibis.cohort.SimpleActivity;
+import ibis.cohort.context.UnitContext;
 import ibis.imaging4j.Image;
 
 public class Scaler extends SimpleActivity {
-
+    
     private final ActivityIdentifier parent;
     private final Image imageIn;
     private final int scale;
     
     public Scaler(ActivityIdentifier parent, Image imageIn, int scale) {
-        super(Context.ANY);
+        super(new UnitContext("CPU"));
         this.parent = parent;
         this.imageIn = imageIn;
         this.scale = scale;

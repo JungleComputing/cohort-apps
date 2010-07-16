@@ -9,6 +9,8 @@ import ibis.imaging4j.Image;
 
 public class Job extends Activity {
 
+    private static final long serialVersionUID = 4805330876984823081L;
+    
     private final ActivityIdentifier parent;
     private final Image imageIn;
     private int scale;

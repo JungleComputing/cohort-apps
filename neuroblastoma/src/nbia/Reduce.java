@@ -1,17 +1,17 @@
 package nbia;
 
 import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Context;
 import ibis.cohort.SimpleActivity;
 import ibis.cohort.context.UnitContext;
 
 public class Reduce extends SimpleActivity {
 
-    private final ActivityIdentifier parent;
+    private static final long serialVersionUID = -8890166876978924388L;
+
     private final Result input;
     
     public Reduce(ActivityIdentifier parent, Result input) { 
-        super(new UnitContext("CPU"));
+        super(parent, new UnitContext("CPU"));
         this.parent = parent;
         this.input = input;
     }

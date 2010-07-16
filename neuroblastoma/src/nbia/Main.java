@@ -1,9 +1,7 @@
 package nbia;
 
-import ibis.cohort.ActivityIdentifier;
 import ibis.cohort.Cohort;
 import ibis.cohort.CohortFactory;
-import ibis.cohort.FlexibleEventCollector;
 
 import java.io.File;
 

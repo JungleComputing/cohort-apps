@@ -2,19 +2,18 @@ package nbia;
 
 import nbia.kernels.Conversion;
 import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Context;
 import ibis.cohort.SimpleActivity;
 import ibis.cohort.context.UnitContext;
 import ibis.imaging4j.Image;
 
 public class Convertor extends SimpleActivity {
 
-    private final ActivityIdentifier parent;
+    private static final long serialVersionUID = 4551613286451029630L;
+
     private final Image imageIn;
     
     public Convertor(ActivityIdentifier parent, Image imageIn) {
-        super(new UnitContext("GPU"));
-        this.parent = parent;
+        super(parent, new UnitContext("GPU"));
         this.imageIn = imageIn;
     }
     

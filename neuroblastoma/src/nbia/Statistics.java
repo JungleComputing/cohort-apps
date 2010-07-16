@@ -7,12 +7,12 @@ import ibis.imaging4j.Image;
 
 public class Statistics extends SimpleActivity {
 
-    private final ActivityIdentifier parent;
+    private static final long serialVersionUID = 6417797064770666866L;
+
     private final Image imageIn;
     
     public Statistics(ActivityIdentifier parent, Image imageIn) {
-        super(new UnitContext("GPU"));
-        this.parent = parent;
+        super(parent, new UnitContext("GPU"));
         this.imageIn = imageIn;
     }
     

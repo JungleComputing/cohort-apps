@@ -2,13 +2,13 @@ package nbia;
 
 import ibis.cohort.Activity;
 import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Context;
 import ibis.cohort.Event;
 import ibis.cohort.MessageEvent;
-import ibis.cohort.SimpleActivity;
 import ibis.cohort.context.UnitContext;
 
 public class Classifier extends Activity {
+
+    private static final long serialVersionUID = 7969491193191600257L;
 
     private final ActivityIdentifier parent;
     

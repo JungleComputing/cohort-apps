@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 public class Result implements Serializable {
 
+    private static final long serialVersionUID = -7754835137436286340L;
+    
     public static final int STATISTICS = 1;
     public static final int LBP        = 2;
     public static final int REDUCE     = 3;

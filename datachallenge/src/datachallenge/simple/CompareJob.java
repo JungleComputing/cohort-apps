@@ -18,7 +18,7 @@ public class CompareJob extends SimpleActivity {
     @Override
     public void simpleActivity() throws Exception {
         
-        System.out.println("Processing " + input);
+        System.out.println("Processing " + input + " " + getContext());
         
         try { 
             Thread.sleep(1000);

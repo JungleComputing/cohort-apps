@@ -1,2 +1,9 @@
-java -cp "./external/*:./build-eclipse" -Dibis.cohort.steal.delay=10 -Dibis.cohort.steal.delay=2 -Dibis.pool.name=TEST2 -Dibis.server.address=localhost:12345 -Dibis.cohort.impl=dist+mt+st:cluster1 datachallenge.simple.Main -cluster cluster1 -dataDir /home/jason/test-data-challenge/cluster1 -execDir `pwd` -clusters cluster1 cluster2 cluster3 cluster4   
+#!/bin/bash
+
+CLUSTER=$1
+DELAY=$2
+SIZE=$3
+POOL=$4
+
+java -cp "./external/*:./build-eclipse:.:" -Dibis.cohort.steal.delay=$DELAY -Dibis.cohort.steal.size=$SIZE -Dibis.pool.name=$POOL -Dibis.server.address=localhost:12345 -Dibis.cohort.impl=dist+mt+st:$CLUSTER datachallenge.simple.Main -cluster $CLUSTER -dataDir /home/jason/test-data-challenge/$CLUSTER -execDir `pwd` -clusters cluster1 cluster2 cluster3 cluster4   
 

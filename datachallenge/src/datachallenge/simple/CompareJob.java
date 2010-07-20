@@ -19,13 +19,7 @@ public class CompareJob extends SimpleActivity {
     public void simpleActivity() throws Exception {
         
         System.out.println("Processing " + input + " " + getContext());
-        
-        try { 
-            Thread.sleep(1000);
-        } catch (Exception e) {
-            // ignored
-        }
-        
+       
         cohort.send(identifier(), parent, LocalConfig.compare(input));
     }
 }

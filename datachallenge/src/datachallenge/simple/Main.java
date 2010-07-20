@@ -17,9 +17,11 @@ import ibis.cohort.context.UnitContext;
 public class Main {
 
     private static final String DEFAULT_EXEC = "dach.sh";
-    
+    private static final String DEFAULT_TMP = "/tmp";
+     
     private static String dataDir; 
     private static String execDir; 
+    private static String tmpDir = DEFAULT_TMP; 
     private static String exec = DEFAULT_EXEC; 
     private static String cluster; 
     private static String [] clusters; 
@@ -58,7 +60,9 @@ public class Main {
                 dataDir = args[++i];
             } else if (tmp.equalsIgnoreCase("-execDir")) { 
                 execDir = args[++i];
-            } else if (tmp.equalsIgnoreCase("-exec")) { 
+            } else if (tmp.equalsIgnoreCase("-tmpDir")) { 
+                tmpDir = args[++i];
+          } else if (tmp.equalsIgnoreCase("-exec")) { 
                 exec = args[++i];
             } else if (tmp.equalsIgnoreCase("-cluster")) { 
                 cluster = args[++i];
@@ -75,6 +79,10 @@ public class Main {
         }
    
         if (execDir == null) { 
+            throw new Exception("Exec directory not set!");
+        }
+        
+        if (tmpDir == null) { 
             throw new Exception("Exec directory not set!");
         }
         
@@ -124,9 +132,11 @@ public class Main {
     public static void main(String [] args) {
 
         try { 
+            ArrayList<Result> res = new ArrayList<Result>();
+            
             parseCommandLine(args);
             
-            LocalConfig.configure(cluster, dataDir, execDir, exec);
+            LocalConfig.configure(cluster, dataDir, execDir, tmpDir, exec);
             
             Cohort cohort = CohortFactory.createCohort();
             cohort.activate();
@@ -159,6 +169,7 @@ public class Main {
                     cohort.submit(new CompareJob(id, job.context, job.problem));
                 }
                 
+                
                 while (count > 0) { 
                     
                     System.out.println("Master waiting for " + count + " results");
@@ -167,12 +178,20 @@ public class Main {
              
                     System.out.println("Master received " + tmp.length + " results");
                     
+                    for (Event e : tmp) { 
+                        res.add((Result) ((MessageEvent) e).message);
+                    }
+                    
                     count -= tmp.length;
                 }
                 
             }
             
             cohort.done();
+        
+            for (Result r : res) { 
+                System.out.println(r);
+            }
             
         } catch (Exception e) {
             e.printStackTrace();

@@ -26,6 +26,8 @@ public class Main {
     private static String cluster; 
     private static String [] clusters; 
     
+    private static boolean isMaster = false;
+    
     static class Job { 
         
         public final String problem;
@@ -62,10 +64,12 @@ public class Main {
                 execDir = args[++i];
             } else if (tmp.equalsIgnoreCase("-tmpDir")) { 
                 tmpDir = args[++i];
-          } else if (tmp.equalsIgnoreCase("-exec")) { 
+            } else if (tmp.equalsIgnoreCase("-exec")) { 
                 exec = args[++i];
             } else if (tmp.equalsIgnoreCase("-cluster")) { 
                 cluster = args[++i];
+            } else if (tmp.equalsIgnoreCase("-master")) { 
+                isMaster = true;
             } else if (tmp.equalsIgnoreCase("-clusters")) { 
              
                 while (i+1 < args.length && !args[i+1].startsWith("-")) { 
@@ -141,7 +145,7 @@ public class Main {
             Cohort cohort = CohortFactory.createCohort();
             cohort.activate();
         
-            if (cohort.isMaster()){ 
+            if (isMaster){ 
                 // Wohoo! I'm in charge.
 
                 // First send a 'list' job to all clusters

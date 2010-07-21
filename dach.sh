@@ -1,6 +1,6 @@
 #!/bin/sh 
 
 echo processing $@
-sleep 1
+sleep 10
 exit 0 
 

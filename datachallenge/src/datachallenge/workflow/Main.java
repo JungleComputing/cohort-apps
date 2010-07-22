@@ -16,13 +16,11 @@ import ibis.cohort.context.UnitContext;
 
 public class Main {
 
-    private static final String DEFAULT_EXEC = "dach.sh";
     private static final String DEFAULT_TMP = "/tmp";
      
     private static String dataDir; 
     private static String execDir; 
     private static String tmpDir = DEFAULT_TMP; 
-    private static String exec = DEFAULT_EXEC; 
     private static String cluster; 
     private static String [] clusters; 
     
@@ -64,8 +62,6 @@ public class Main {
                 execDir = args[++i];
             } else if (tmp.equalsIgnoreCase("-tmpDir")) { 
                 tmpDir = args[++i];
-            } else if (tmp.equalsIgnoreCase("-exec")) { 
-                exec = args[++i];
             } else if (tmp.equalsIgnoreCase("-cluster")) { 
                 cluster = args[++i];
             } else if (tmp.equalsIgnoreCase("-master")) { 
@@ -136,11 +132,11 @@ public class Main {
     public static void main(String [] args) {
 
         try { 
-            ArrayList<Result> res = new ArrayList<Result>();
+            ArrayList<CompareResult> res = new ArrayList<CompareResult>();
             
             parseCommandLine(args);
             
-            LocalConfig.configure(cluster, dataDir, execDir, tmpDir, exec);
+            LocalConfig.configure(cluster, dataDir, execDir, tmpDir);
             
             Cohort cohort = CohortFactory.createCohort();
             cohort.activate();
@@ -182,7 +178,7 @@ public class Main {
                     System.out.println("Master received " + tmp.length + " results");
                     
                     for (Event e : tmp) { 
-                        res.add((Result) ((MessageEvent) e).message);
+                        res.add((CompareResult) ((MessageEvent) e).message);
                     }
                     
                     count -= tmp.length;
@@ -192,7 +188,7 @@ public class Main {
             
             cohort.done();
         
-            for (Result r : res) { 
+            for (CompareResult r : res) { 
                 System.out.println(r);
             }
             

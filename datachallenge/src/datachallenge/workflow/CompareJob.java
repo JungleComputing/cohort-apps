@@ -1,13 +1,12 @@
 package datachallenge.workflow;
 
-import java.util.ArrayList;
-
 import ibis.cohort.Activity;
 import ibis.cohort.ActivityIdentifier;
 import ibis.cohort.Context;
 import ibis.cohort.Event;
 import ibis.cohort.MessageEvent;
-import ibis.cohort.SimpleActivity;
+
+import java.util.ArrayList;
 
 public class CompareJob extends Activity {
 
@@ -19,6 +18,9 @@ public class CompareJob extends Activity {
     private static final int POSTPROCESS = 6;
     private static final int DONE        = 7;
     
+    private static final int ERROR       = 99;
+    
+    
     private static final long serialVersionUID = -653442064273941414L;
     
     private final ActivityIdentifier parent;
@@ -27,16 +29,14 @@ public class CompareJob extends Activity {
     
     private int state = START;
     
-    private DetectResult detectBefore;
-    private DetectResult detectAfter;
-    
-    private ArrayList<SubResult> sub;
-   
+    // Gather all results...
+    private ArrayList<ScriptResult> detect;
+    private ScriptResult match;
+    private ArrayList<ScriptResult> sub;
+    private ScriptResult post;
+
     private String before;
     private String after;
-
-    private String result;
-    
     private String tmpDir;
     
     public CompareJob(ActivityIdentifier parent, Context c, String input, 
@@ -51,11 +51,13 @@ public class CompareJob extends Activity {
     public void cancel() throws Exception {
         // Not used 
     }
-
    
     @Override
     public void initialize() throws Exception {
 
+        detect = new ArrayList<ScriptResult>();
+        sub = new ArrayList<ScriptResult>();
+        
         state = COPY;
      
         tmpDir = LocalConfig.generateTmp();
@@ -74,20 +76,37 @@ public class CompareJob extends Activity {
         suspend();
     }
 
-    private void handleDetectResult(DetectResult r) { 
+    private void match() { 
+        match = LocalConfig.runScript(new String [] { 
+                LocalConfig.getScript("stage2.sh"), tmpDir, before, after }); 
+    } 
     
-        if (r.isBefore()) { 
-            detectBefore = r;
-        } else { 
-            detectAfter = r;
-        }
-        
-        if (detectBefore != null && detectAfter != null) {
+    private void postProcess() { 
+        post = LocalConfig.runScript(new String [] { 
+                LocalConfig.getScript("stage4.sh"), tmpDir, before, after }); 
+    }
 
+    
+    private void handleDetectResult(ScriptResult r) { 
+    
+        detect.add(r);
+        
+        if (detect.size() == 2) { 
+
+            if (detect.get(0).exit != 0 || detect.get(1).exit != 0) {
+                state = ERROR;
+                return;
+            }
+            
             state = MATCH;
             
-            LocalConfig.match(tmpDir, before, after);
-        
+            match();
+     
+            if (match.exit != 0) { 
+                state = ERROR;
+                return;
+            }
+            
             state = SUB;
             
             for (int i=0;i<split;i++) { 
@@ -97,15 +116,28 @@ public class CompareJob extends Activity {
         }
     }
     
-    private void handleSubResult(SubResult r) { 
+    private void handleSubResult(ScriptResult r) { 
         
         sub.add(r);
         
         if (sub.size() == split) { 
             // all results are in
+            
+            for (ScriptResult s : sub) { 
+                if (s.exit != 0) { 
+                    state = ERROR;
+                    return;
+                }
+            }
+            
             state = POSTPROCESS;
             
-            LocalConfig.postprocess(tmpDir, before, after);
+            postProcess();
+            
+            if (post.exit != 0) { 
+                state = ERROR;
+                return;
+            }
             
             state = DONE;
         }
@@ -114,16 +146,18 @@ public class CompareJob extends Activity {
     @Override
     public void process(Event e) throws Exception {
 
+        ScriptResult r = (ScriptResult) ((MessageEvent) e).message;
+        
         switch (state) { 
         case DETECT:
-            handleDetectResult((DetectResult) ((MessageEvent) e).message); 
+            handleDetectResult(r); 
             break;     
         case SUB:
-            handleSubResult((SubResult) ((MessageEvent) e).message); 
+            handleSubResult(r); 
             break;     
         } 
         
-        if (state == DONE) { 
+        if (state == DONE || state == ERROR) { 
             finish();
         } else { 
             suspend();
@@ -132,6 +166,10 @@ public class CompareJob extends Activity {
     
     @Override
     public void cleanup() throws Exception {
-        cohort.send(identifier(), parent, new Result(input, null, 0, 0, result));
+        
+        CompareResult result = new CompareResult(input, LocalConfig.cluster(), 
+                split, detect, match, sub, post, state == DONE);
+        
+        cohort.send(identifier(), parent, result);
     }
 }

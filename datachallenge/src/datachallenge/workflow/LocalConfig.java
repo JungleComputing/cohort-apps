@@ -16,7 +16,10 @@ public class LocalConfig {
     private static String execDir; 
     private static String tmpDir; 
 
-    private static String executable; 
+    private static String executableStage1;
+    private static String executableStage2;
+    private static String executableStage3;
+    private static String executableStage4;
 
     private static String cpExec = "/bin/cp";
     
@@ -37,7 +40,7 @@ public class LocalConfig {
     }
 
     public static synchronized void configure(String clusterName, String dataD, 
-            String execD, String tmpD, String execN) throws Exception { 
+            String execD, String tmpD) throws Exception { 
 
         if (configured) { 
             return;
@@ -72,12 +75,27 @@ public class LocalConfig {
             throw new Exception("Tmp dir not useable!");
         }
 
-        executable = execDir + File.separator + execN;
-
-        if (!fileExists(executable)) { 
-            throw new Exception("Executable not found: " + executable);
+        executableStage1 = execDir + File.separator + "stage1.sh";
+        executableStage2 = execDir + File.separator + "stage2.sh";
+        executableStage3 = execDir + File.separator + "stage3.sh";
+        executableStage4 = execDir + File.separator + "stage4.sh";
+        
+        if (!fileExists(executableStage1)) { 
+            throw new Exception("Executable not found: " + executableStage1);
         }
 
+        if (!fileExists(executableStage2)) { 
+            throw new Exception("Executable not found: " + executableStage2);
+        }
+        
+        if (!fileExists(executableStage3)) { 
+            throw new Exception("Executable not found: " + executableStage3);
+        }
+        
+        if (!fileExists(executableStage4)) { 
+            throw new Exception("Executable not found: " + executableStage4);
+        }
+        
         configured = true;
     }
 
@@ -141,8 +159,21 @@ public class LocalConfig {
 
         return new ProblemList(cluster, 
                 result.toArray(new String[result.size()]));
+        /**
+         * 
+         */
+        
     }
 
+    public static String cluster() { 
+        return cluster;
+    }
+    
+    public static String execDir() { 
+        return execDir;
+    }
+    
+    /*
     public static int run(String [] cmd, StringBuilder out, StringBuilder err) { 
 
         RunProcess p = new RunProcess(cmd);
@@ -153,8 +184,7 @@ public class LocalConfig {
 
         return p.getExitStatus();               
     }
-    
-    /*
+
     public static boolean localCopy(String path, String localFile) { 
 
         long start = System.currentTimeMillis();
@@ -244,19 +274,22 @@ public class LocalConfig {
     }
      */
     
-    public static Object detect(String tmpDir, String file, int threshold) {
-        // TODO Auto-generated method stub
-        return null;
-    }
 
-    public static void match(String tmpDir, String before, String after) {
-        // TODO Auto-generated method stub
+    public static ScriptResult runScript(String [] command) {
         
-    }
+        long start = System.currentTimeMillis();
+        
+        RunProcess p = new RunProcess(command);
+        p.run();
 
-    public static Object imsub(String tmpDir, String before, String after, 
-            int threshold, int rank, int size) {
-        return null;
+        byte [] out = p.getStdout();
+        byte [] err = p.getStderr();
+
+        int exit = p.getExitStatus();           
+
+        long end = System.currentTimeMillis();
+        
+        return new ScriptResult(command, out, err, exit, end-start);
     }
 
     public static String generateTmp() {
@@ -272,6 +305,10 @@ public class LocalConfig {
     public static void postprocess(String tmpDir, String before, String after) {
         // TODO Auto-generated method stub
         
+    }
+
+    public static String getScript(String script) {
+        return execDir + File.separator + script;
     }
 
 }

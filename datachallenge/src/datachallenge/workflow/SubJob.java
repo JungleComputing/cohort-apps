@@ -1,13 +1,15 @@
 package datachallenge.workflow;
 
-import ibis.cohort.Activity;
 import ibis.cohort.ActivityIdentifier;
 import ibis.cohort.Context;
-import ibis.cohort.Event;
 import ibis.cohort.SimpleActivity;
 
 public class SubJob extends SimpleActivity {
 
+    private static final long serialVersionUID = 1209061178355255853L;
+
+    private static String script = "stage3.sh";
+    
     private final String tmpDir;
     private final String before;
     private final String after;
@@ -29,8 +31,12 @@ public class SubJob extends SimpleActivity {
 
     @Override
     public void simpleActivity() throws Exception {
-        cohort.send(identifier(), parent, LocalConfig.imsub(tmpDir, before, 
-                after, threshold, rank, size));
+        
+        ScriptResult result = LocalConfig.runScript(new String [] { 
+                LocalConfig.getScript(script), tmpDir, before, after, 
+                "" + threshold, "" + rank, "" + size });
+        
+        cohort.send(identifier(), parent, result);         
     }
 
 }

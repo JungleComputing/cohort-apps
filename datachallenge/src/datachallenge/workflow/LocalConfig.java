@@ -11,6 +11,7 @@ public class LocalConfig {
     private static boolean configured = false;
 
     private static String cluster; 
+    private static String host; 
 
     private static String dataDir; 
     private static String execDir; 
@@ -39,14 +40,15 @@ public class LocalConfig {
         } 
     }
 
-    public static synchronized void configure(String clusterName, String dataD, 
-            String execD, String tmpD) throws Exception { 
+    public static synchronized void configure(String clusterName, 
+            String hostName, String dataD, String execD, String tmpD) throws Exception { 
 
         if (configured) { 
             return;
         }
 
         cluster = clusterName;
+        host = hostName;
         dataDir = dataD;
         execDir = execD;
         tmpDir = tmpD;
@@ -309,6 +311,10 @@ public class LocalConfig {
 
     public static String getScript(String script) {
         return execDir + File.separator + script;
+    }
+
+    public static String host() {
+        return host;
     }
 
 }

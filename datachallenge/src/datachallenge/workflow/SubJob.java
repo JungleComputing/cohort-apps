@@ -18,9 +18,9 @@ public class SubJob extends SimpleActivity {
     private final int rank;
     private final int size;
     
-    public SubJob(ActivityIdentifier parent, String tmpDir, String before, 
-            String after, int threshold, int rank, int size) {
-        super(parent, Context.COHORT);
+    public SubJob(ActivityIdentifier parent, Context c, String tmpDir, 
+            String before, String after, int threshold, int rank, int size) {
+        super(parent, c);
         this.tmpDir = tmpDir;
         this.before = before;
         this.after = after;

@@ -11,7 +11,7 @@ import ibis.cohort.Event;
 import ibis.cohort.FlexibleEventCollector;
 import ibis.cohort.MessageEvent;
 import ibis.cohort.MultiEventCollector;
-import ibis.cohort.context.ContextSet;
+import ibis.cohort.context.OrContext;
 import ibis.cohort.context.UnitContext;
 
 public class Main {
@@ -31,20 +31,26 @@ public class Main {
     static class Job { 
         
         public final String problem;
-        public Context context;
+        public final ArrayList<UnitContext> context = new ArrayList<UnitContext>();
         
-        public Job(String problem, Context context) { 
+        public Job(String problem, UnitContext context) { 
             this.problem = problem;
-            this.context = context;
+            this.context.add(context);
         }
         
         public void addContext(UnitContext c) {
+            this.context.add(c); 
+        }
+
+        public Context getContext() {
             
-            if (context instanceof UnitContext) { 
-                context = new ContextSet((UnitContext) context);
+            if (context.size() == 1) { 
+                return context.get(0);
             }
             
-            ((ContextSet)context).add(c);
+            return new OrContext(
+                    context.toArray(new UnitContext[context.size()]), 
+                    null, false);
         }
     }
 
@@ -101,12 +107,13 @@ public class Main {
         clusters = c.toArray(new String [c.size()]);
     }
     
+    /*
     private static Context generateContext(String [] clusters) { 
         
-        if (clusters.length == 0) { 
+        if (clusters.length == 1) { 
             return new UnitContext(clusters[0]);
         }
-        
+       
         ContextSet set = new ContextSet(new UnitContext(clusters[0]));
         
         for (int i=1;i<clusters.length;i++) { 
@@ -115,7 +122,7 @@ public class Main {
         
         return set;
     }
-    
+    */
     private static void processList(ProblemList l) { 
         
         UnitContext c = new UnitContext(l.cluster);
@@ -170,7 +177,7 @@ public class Main {
                 
                 // Submit a job for every image pair
                 for (Job job : jobs.values()) { 
-                    cohort.submit(new CompareJob(id, job.context, job.problem));
+                    cohort.submit(new CompareJob(id, job.getContext(), job.problem));
                 }
                 
                 

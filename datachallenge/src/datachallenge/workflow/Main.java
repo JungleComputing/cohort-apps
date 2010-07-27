@@ -11,7 +11,7 @@ import ibis.cohort.Event;
 import ibis.cohort.FlexibleEventCollector;
 import ibis.cohort.MessageEvent;
 import ibis.cohort.MultiEventCollector;
-import ibis.cohort.context.ContextSet;
+import ibis.cohort.context.OrContext;
 import ibis.cohort.context.UnitContext;
 
 public class Main {
@@ -22,6 +22,7 @@ public class Main {
     private static String execDir; 
     private static String tmpDir = DEFAULT_TMP; 
     private static String cluster; 
+    private static String host; 
     private static String [] clusters; 
     
     private static boolean isMaster = false;
@@ -29,23 +30,29 @@ public class Main {
     static class Job { 
         
         public final String problem;
-        public Context context;
+        public final ArrayList<UnitContext> context = new ArrayList<UnitContext>();
         
-        public Job(String problem, Context context) { 
+        public Job(String problem, UnitContext context) { 
             this.problem = problem;
-            this.context = context;
+            this.context.add(context);
         }
         
         public void addContext(UnitContext c) {
+            this.context.add(c); 
+        }
+
+        public Context getContext() {
             
-            if (context instanceof UnitContext) { 
-                context = new ContextSet((UnitContext) context);
+            if (context.size() == 1) { 
+                return context.get(0);
             }
             
-            ((ContextSet)context).add(c);
+            return new OrContext(
+                    context.toArray(new UnitContext[context.size()]), 
+                    null, false);
         }
     }
-
+    
     private static HashMap<String, Job> jobs = new HashMap<String, Job>();
     
     private static void parseCommandLine(String [] args) throws Exception { 
@@ -64,6 +71,8 @@ public class Main {
                 tmpDir = args[++i];
             } else if (tmp.equalsIgnoreCase("-cluster")) { 
                 cluster = args[++i];
+            } else if (tmp.equalsIgnoreCase("-host")) { 
+                host = args[++i];
             } else if (tmp.equalsIgnoreCase("-master")) { 
                 isMaster = true;
             } else if (tmp.equalsIgnoreCase("-clusters")) { 
@@ -90,6 +99,10 @@ public class Main {
             throw new Exception("Cluster name not set!");
         }
         
+        if (host == null) { 
+            throw new Exception("Host name not set!");
+        }
+        
         if (c.size() == 0) { 
             throw new Exception("Cluster list set!");
         }
@@ -97,6 +110,7 @@ public class Main {
         clusters = c.toArray(new String [c.size()]);
     }
     
+    /*
     private static Context generateContext(String [] clusters) { 
         
         if (clusters.length == 0) { 
@@ -110,7 +124,7 @@ public class Main {
         }
         
         return set;
-    }
+    }*/
     
     private static void processList(ProblemList l) { 
         
@@ -136,7 +150,7 @@ public class Main {
             
             parseCommandLine(args);
             
-            LocalConfig.configure(cluster, dataDir, execDir, tmpDir);
+            LocalConfig.configure(cluster, host, dataDir, execDir, tmpDir);
             
             Cohort cohort = CohortFactory.createCohort();
             cohort.activate();
@@ -166,7 +180,8 @@ public class Main {
                 
                 // Submit a job for every image pair
                 for (Job job : jobs.values()) { 
-                    cohort.submit(new CompareJob(id, job.context, job.problem, 8));
+                    cohort.submit(new CompareJob(id, job.getContext(), 
+                            job.problem, 8));
                 }
                 
                 while (count > 0) { 

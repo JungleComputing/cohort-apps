@@ -16,6 +16,7 @@ public class CompareJob extends Activity {
     private static final int MATCH       = 4;
     private static final int SUB         = 5;
     private static final int POSTPROCESS = 6;
+    
     private static final int DONE        = 7;
     
     private static final int ERROR       = 99;
@@ -70,8 +71,8 @@ public class CompareJob extends Activity {
         
         state = DETECT;
         
-        cohort.submit(new DetectJob(identifier(), tmpDir, before, 1000));
-        cohort.submit(new DetectJob(identifier(), tmpDir, after, 1000));
+        cohort.submit(new DetectJob(identifier(), getContext(), tmpDir, before, 1000));
+        cohort.submit(new DetectJob(identifier(), getContext(), tmpDir, after, 1000));
         
         suspend();
     }
@@ -110,8 +111,8 @@ public class CompareJob extends Activity {
             state = SUB;
             
             for (int i=0;i<split;i++) { 
-                cohort.submit(new SubJob(identifier(), tmpDir, before, after, 
-                        1000, i, split));
+                cohort.submit(new SubJob(identifier(), getContext(), tmpDir, 
+                        before, after, 1000, i, split));
             }
         }
     }

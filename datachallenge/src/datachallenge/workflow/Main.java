@@ -149,7 +149,7 @@ public class Main {
             
             parseCommandLine(args);
             
-            LocalConfig.configure(cluster, host, dataDir, execDir, tmpDir);
+            LocalConfig.configure(cluster, dataDir, execDir, tmpDir);
             
             Cohort cohort = CohortFactory.createCohort();
             cohort.activate();

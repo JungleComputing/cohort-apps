@@ -28,7 +28,7 @@ public class LaunchJob extends SimpleActivity {
         // we end up on. This new job is given a restricted context, such that 
         // it cannot move to another machine.
         
-        Context c = new UnitContext(LocalConfig.host());
+        Context c = new UnitContext(LocalConfig.cluster());
         cohort.submit(new CompareJob(parent, c, input, split));
     }
 

@@ -4,6 +4,7 @@ import ibis.util.RunProcess;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class LocalConfig {
@@ -175,8 +176,7 @@ public class LocalConfig {
         return execDir;
     }
     
-    /*
-    public static int run(String [] cmd, StringBuilder out, StringBuilder err) { 
+    private static int run(String [] cmd, StringBuilder out, StringBuilder err) { 
 
         RunProcess p = new RunProcess(cmd);
         p.run();
@@ -186,38 +186,38 @@ public class LocalConfig {
 
         return p.getExitStatus();               
     }
-
-    public static boolean localCopy(String path, String localFile) { 
+    
+    private static boolean localCopy(String src, String dst) { 
 
         long start = System.currentTimeMillis();
 
-        System.out.println("Copying local file: " + path + " to local file " + localFile);
+        System.out.println("Copying local file: " + src + " to local file " + dst);
 
-        if (!fileExists(path)) { 
-            System.out.println("Input file " + path + " not found\n");
+        if (!fileExists(src)) { 
+            System.out.println("Input file " + src + " not found\n");
             return false;
         }
 
         StringBuilder stdout = new StringBuilder();
         StringBuilder stderr = new StringBuilder();
 
-        int exit = run(new String [] { cpExec, path, localFile }, stdout, stderr); 
+        int exit = run(new String [] { cpExec, src, dst }, stdout, stderr); 
 
         if (exit != 0) {
-            System.out.println("Failed to locally copy file " + path 
+            System.out.println("Failed to locally copy file " + src 
                 + " (stdout: " + stdout + ") (stderr: " + stderr + ")\n");
             return false;
         }
 
         long end = System.currentTimeMillis();
 
-        System.out.println("Local copying " + path + " took " + (end-start) 
+        System.out.println("Local copying " + src + " took " + (end-start) 
                 + " ms.");
 
         return true;            
     }
 
-
+/*
     public static Result compare(String input) {
 
         long start = System.currentTimeMillis();
@@ -294,21 +294,22 @@ public class LocalConfig {
         return new ScriptResult(command, out, err, exit, end-start);
     }
 
-    public static String generateTmp() {
-        // TODO Auto-generated method stub
-        return null;
+    public static File generateTmp(String input) throws IOException {
+        return File.createTempFile(input, "", new File(tmpDir));
     }
 
-    public static String prepare(String before, String tmpDir) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    public static void postprocess(String tmpDir, String before, String after) {
-        // TODO Auto-generated method stub
+    public static String prepare(String filename, String tmpDir) throws Exception {
         
-    }
+        String src = dataDir + File.separator + filename;
+        String dst = tmpDir + File.separator + filename;
+        
+        if (!localCopy(src, dst)) { 
+            throw new Exception("Failed to copy file: " + src + " -> " + dst);
+        }
 
+        return dst;
+    }
+   
     public static String getScript(String script) {
         return execDir + File.separator + script;
     }

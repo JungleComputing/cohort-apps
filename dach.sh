@@ -1,6 +1,6 @@
 #!/bin/sh 
 
-echo processing $@
+echo dach processing $@
 sleep 10
 exit 0 
 

@@ -6,6 +6,7 @@ import ibis.cohort.Context;
 import ibis.cohort.Event;
 import ibis.cohort.MessageEvent;
 
+import java.io.File;
 import java.util.ArrayList;
 
 public class CompareJob extends Activity {
@@ -20,7 +21,6 @@ public class CompareJob extends Activity {
     private static final int DONE        = 7;
     
     private static final int ERROR       = 99;
-    
     
     private static final long serialVersionUID = -653442064273941414L;
     
@@ -42,7 +42,7 @@ public class CompareJob extends Activity {
     
     public CompareJob(ActivityIdentifier parent, Context c, String input, 
             int split) {
-        super(c);
+        super(c, true);
         this.parent = parent;
         this.input = input;
         this.split = split;
@@ -61,11 +61,14 @@ public class CompareJob extends Activity {
         
         state = COPY;
      
-        tmpDir = LocalConfig.generateTmp();
+        File tmp = LocalConfig.generateTmp(input);
+        
+        tmpDir = tmp.getAbsolutePath();
         
         before = LocalConfig.beforeName(input);
         after = LocalConfig.beforeName(input);
       
+        // FIXME: copy these files in parallel!
         before = LocalConfig.prepare(before, tmpDir);
         after = LocalConfig.prepare(after, tmpDir);
         

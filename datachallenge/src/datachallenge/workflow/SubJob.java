@@ -20,7 +20,7 @@ public class SubJob extends SimpleActivity {
     
     public SubJob(ActivityIdentifier parent, Context c, String tmpDir, 
             String before, String after, int threshold, int rank, int size) {
-        super(parent, c);
+        super(parent, c, true);
         this.tmpDir = tmpDir;
         this.before = before;
         this.after = after;

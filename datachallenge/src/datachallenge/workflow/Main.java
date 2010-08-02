@@ -47,9 +47,8 @@ public class Main {
                 return context.get(0);
             }
             
-            return new OrContext(
-                    context.toArray(new UnitContext[context.size()]), 
-                    null, false);
+            return new OrContext(context.toArray(
+                    new UnitContext[context.size()]), null);
         }
     }
     

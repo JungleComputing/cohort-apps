@@ -50,7 +50,7 @@ public class Main {
             
             return new OrContext(
                     context.toArray(new UnitContext[context.size()]), 
-                    null, false);
+                    null);
         }
     }
 

@@ -154,7 +154,7 @@ public class Main {
                 
                 // First send a 'list' job to all clusters
                 MultiEventCollector c = new MultiEventCollector(
-                        new UnitContext(cluster), clusters.length);
+                        new UnitContext("master"), clusters.length);
                 ActivityIdentifier id = cohort.submit(c);
                 
                 for (String cluster : clusters) { 
@@ -171,7 +171,8 @@ public class Main {
                     processList((ProblemList) ((MessageEvent) e).message);
                 }
     
-                FlexibleEventCollector f = new FlexibleEventCollector();
+                FlexibleEventCollector f = new FlexibleEventCollector(
+                        new UnitContext("master"));
                 id = cohort.submit(f);
       
                 int count = jobs.size();

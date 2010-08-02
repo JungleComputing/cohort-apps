@@ -22,7 +22,6 @@ public class Main {
     private static String execDir; 
     private static String tmpDir = DEFAULT_TMP; 
     private static String cluster; 
-    private static String host; 
     private static String [] clusters; 
     
     private static boolean isMaster = false;
@@ -70,8 +69,6 @@ public class Main {
                 tmpDir = args[++i];
             } else if (tmp.equalsIgnoreCase("-cluster")) { 
                 cluster = args[++i];
-            } else if (tmp.equalsIgnoreCase("-host")) { 
-                host = args[++i];
             } else if (tmp.equalsIgnoreCase("-master")) { 
                 isMaster = true;
             } else if (tmp.equalsIgnoreCase("-clusters")) { 
@@ -96,10 +93,6 @@ public class Main {
         
         if (cluster == null) { 
             throw new Exception("Cluster name not set!");
-        }
-        
-        if (host == null) { 
-            throw new Exception("Host name not set!");
         }
         
         if (c.size() == 0) { 

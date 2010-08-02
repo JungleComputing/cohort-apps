@@ -296,8 +296,17 @@ public class LocalConfig {
         return new ScriptResult(command, out, err, exit, end-start);
     }
 
-    public static File generateTmp(String input) throws IOException {
-        return File.createTempFile(input, "", new File(tmpDir));
+    public static File generateTmpDir(String input) throws IOException {
+        
+        // Create a temp file, remember its name, and remove it again.
+        File tmp = File.createTempFile(input, "", new File(tmpDir));
+        String name = tmp.getCanonicalPath();
+        tmp.delete();
+        
+        // Create a dir with the same unique name
+        File dir = new File(name);
+        dir.mkdirs();
+        return dir;
     }
 
     public static String prepare(String filename, String tmpDir) throws Exception {

@@ -61,7 +61,7 @@ public class CompareJob extends Activity {
         
         state = COPY;
      
-        File tmp = LocalConfig.generateTmp(input);
+        File tmp = LocalConfig.generateTmpDir(input);
         
         tmpDir = tmp.getAbsolutePath();
         

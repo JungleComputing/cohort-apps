@@ -179,7 +179,7 @@ public class Main {
                 
                 // Submit a job for every image pair
                 for (Job job : jobs.values()) { 
-                    cohort.submit(new CompareJob(id, job.getContext(), 
+                    cohort.submit(new LaunchJob(id, job.getContext(), 
                             job.problem, 8));
                 }
                 

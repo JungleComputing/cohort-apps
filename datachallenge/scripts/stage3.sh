@@ -1,6 +1,11 @@
 #!/bin/sh 
 
 echo stage3 $@
-sleep 10
+
+TIME=$(( 8/$6 ))
+
+echo processing time $TIME
+
+sleep $TIME
 exit 0 
 

@@ -153,7 +153,8 @@ public class Main {
                 System.out.println("Master started");
                 
                 // First send a 'list' job to all clusters
-                MultiEventCollector c = new MultiEventCollector(clusters.length);
+                MultiEventCollector c = new MultiEventCollector(
+                        new UnitContext(cluster), clusters.length);
                 ActivityIdentifier id = cohort.submit(c);
                 
                 for (String cluster : clusters) { 

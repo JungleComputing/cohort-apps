@@ -66,7 +66,7 @@ public class CompareJob extends Activity {
         tmpDir = tmp.getAbsolutePath();
         
         before = LocalConfig.beforeName(input);
-        after = LocalConfig.beforeName(input);
+        after = LocalConfig.afterName(input);
       
         // FIXME: copy these files in parallel!
         before = LocalConfig.prepare(before, tmpDir);

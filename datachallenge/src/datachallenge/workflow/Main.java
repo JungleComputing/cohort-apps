@@ -150,11 +150,16 @@ public class Main {
             if (isMaster){ 
                 // Wohoo! I'm in charge.
 
+                System.out.println("Master started");
+                
                 // First send a 'list' job to all clusters
                 MultiEventCollector c = new MultiEventCollector(clusters.length);
                 ActivityIdentifier id = cohort.submit(c);
                 
                 for (String cluster : clusters) { 
+                
+                    System.out.println("Master submit listjob " + cluster);
+                         
                     cohort.submit(new ListJob(id, cluster));
                 }
               

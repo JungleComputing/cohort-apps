@@ -138,11 +138,15 @@ public class LocalConfig {
             throw new Exception("LocalConfig not configured!");
         }
 
+        System.out.println("Generating list of input files in " + dataDir);
+        
         ArrayList<String> result = new ArrayList<String>();
 
         File dir = new File(dataDir);
         File [] files = dir.listFiles(new DataFilter());
 
+        System.out.println("Potential problems: " + files.length);
+        
         for (File f : files) { 
 
             String problem = problemName(f.getName());

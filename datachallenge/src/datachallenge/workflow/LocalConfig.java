@@ -299,7 +299,7 @@ public class LocalConfig {
     public static File generateTmpDir(String input) throws IOException {
         
         // Create a temp file, remember its name, and remove it again.
-        File tmp = File.createTempFile(input, "", new File(tmpDir));
+        File tmp = File.createTempFile("TMP" + input, "", new File(tmpDir));
         String name = tmp.getCanonicalPath();
         tmp.delete();
         

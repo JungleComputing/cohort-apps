@@ -235,6 +235,9 @@ public class LocalConfig {
 
             long end = System.currentTimeMillis();
         
+            System.out.println("Processing " + input + " took " + (end-copy) + " ms.");
+            System.out.println("Total time " + input + " is " + (end-start) + " ms.");
+            
             return new Result(input, cluster, copy-start, end-copy, out);
             
         } catch (Exception e) {

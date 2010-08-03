@@ -11,7 +11,7 @@ public class CompareJob extends SimpleActivity {
     private final String input;
     
     public CompareJob(ActivityIdentifier parent, Context c, String input) {
-        super(parent, c);
+        super(parent, c, true);
         this.input = input;
     }
 

@@ -144,6 +144,8 @@ public class Main {
             
             LocalConfig.configure(cluster, dataDir, execDir, tmpDir);
             
+            long start = System.currentTimeMillis();
+            
             Cohort cohort = CohortFactory.createCohort();
             cohort.activate();
         
@@ -184,12 +186,14 @@ public class Main {
                 }
                 
                 while (count > 0) { 
+            
+                    long t = System.currentTimeMillis();
                     
-                    System.out.println("Master waiting for " + count + " results");
+                    System.out.println((t-start) + " Master waiting for " + count + " results");
                     
                     Event [] tmp = f.waitForEvents();
              
-                    System.out.println("Master received " + tmp.length + " results");
+                    System.out.println((t-start) + " Master received " + tmp.length + " results");
                     
                     for (Event e : tmp) { 
                         res.add((CompareResult) ((MessageEvent) e).message);
@@ -198,6 +202,9 @@ public class Main {
                     count -= tmp.length;
                 }
                 
+                long t = System.currentTimeMillis();
+                
+                System.out.println((t-start) + " Master DONE");
             }
             
             cohort.done();

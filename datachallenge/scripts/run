@@ -12,5 +12,19 @@ shift
 POOL=$1
 shift
 
-java -cp "./external/*:./build-eclipse:.:" -Dibis.cohort.steal.delay=$DELAY -Dibis.cohort.steal.size=$SIZE -Dibis.pool.name=$POOL -Dibis.server.address=localhost:12345 -Dibis.cohort.impl=dist+mt+st:$CLUSTER datachallenge.simple.Main -cluster $CLUSTER -dataDir /home/jason/test-data-challenge/$CLUSTER -execDir `pwd` -tmpDir /home/jason/test-data-challenge/tmp/$CLUSTER $@ -clusters cluster1 cluster2 cluster3 cluster4   
+java -cp "../external/*:./jars/dach-cohort.jar:.:" \
+-Dibis.cohort.steal.delay=$DELAY \
+-Dibis.cohort.steal.size=$SIZE \
+-Dibis.cohort.impl=dist+mt+[st:$CLUSTER,st:$CLUSTER,st:$CLUSTER,st:$CLUSTER] \
+-Dibis.pool.name=$POOL \
+-Dibis.server.address=localhost:12345 \
+datachallenge.workflow.Main \
+-cluster $CLUSTER \
+-dataDir /home/jason/test-data-challenge/$CLUSTER \
+-execDir `pwd`/scripts \
+-tmpDir /home/jason/test-data-challenge/tmp/$CLUSTER \
+$@ -clusters cluster1 cluster2 cluster3 cluster4
+
+# -Dibis.cohort.impl=dist+mt+[st:$CLUSTER,st:$CLUSTER,st:$CLUSTER,st:$CLUSTER] \
+# -Dibis.cohort.impl=dist+mt+st:$CLUSTER \
 

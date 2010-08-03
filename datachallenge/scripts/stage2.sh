@@ -1,6 +1,6 @@
 #!/bin/sh 
 
 echo stage2 $@
-sleep 10
+sleep 4
 exit 0 
 

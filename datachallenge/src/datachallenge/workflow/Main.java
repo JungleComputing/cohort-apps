@@ -29,10 +29,12 @@ public class Main {
     static class Job { 
         
         public final String problem;
+        public final long size;
         public final ArrayList<UnitContext> context = new ArrayList<UnitContext>();
         
-        public Job(String problem, UnitContext context) { 
+        public Job(String problem, long size, UnitContext context) { 
             this.problem = problem;
+            this.size = size;
             this.context.add(context);
         }
         
@@ -122,12 +124,15 @@ public class Main {
         
         UnitContext c = new UnitContext(l.cluster);
         
-        for (String problem : l.problems) { 
+        for (int i=0;i<l.problems.length;i++) {
+            
+            String problem = l.problems[i];
+            long size = l.sizes[i];
             
             Job tmp = jobs.get(problem);
             
             if (tmp == null) { 
-                tmp = new Job(problem, c);
+                tmp = new Job(problem, size, c);
                 jobs.put(problem, tmp);
             } else { 
                 tmp.addContext(c);
@@ -179,10 +184,19 @@ public class Main {
       
                 int count = jobs.size();
                 
+//              Find the biggest job in the set
+                long size = 0;
+                
+                for (Job job : jobs.values()) { 
+                    if (job.size > size) { 
+                        size = job.size;
+                    }
+                }
+                
                 // Submit a job for every image pair
                 for (Job job : jobs.values()) { 
                     cohort.submit(new LaunchJob(id, job.getContext(), 
-                            job.problem, 8));
+                            (int) (size-job.size), job.problem, 8));
                 }
                 
                 while (count > 0) { 

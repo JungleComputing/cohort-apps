@@ -138,6 +138,45 @@ public class LocalConfig {
             throw new Exception("LocalConfig not configured!");
         }
 
+        ArrayList<String> result = new ArrayList<String>();
+        ArrayList<Long> sizes = new ArrayList<Long>();
+        
+        File dir = new File(dataDir);
+        File [] files = dir.listFiles(new DataFilter());
+
+        for (File f : files) { 
+
+            String problem = problemName(f.getName());
+
+            System.out.println("Potential problem set: " + problem + " ( " 
+                    + f.getName() + ")");
+
+            if (fileExists(dataDir + File.separator + afterName(problem))) {
+                System.out.println("Add pair " + problem);
+                result.add(problem);
+                sizes.add(f.length());
+            }
+        }
+
+        System.out.println("Returning new ProblemList");
+
+        long [] tmp = new long[sizes.size()];
+        
+        for (int i=0;i<sizes.size();i++) { 
+            tmp[i] = sizes.get(i);
+        }
+        
+        return new ProblemList(cluster, 
+                result.toArray(new String[result.size()]), tmp);
+    }
+    
+    /*
+    public static ProblemList listProblems() throws Exception { 
+
+        if (!isConfigured()) { 
+            throw new Exception("LocalConfig not configured!");
+        }
+
         System.out.println("Generating list of input files in " + dataDir);
         
         ArrayList<String> result = new ArrayList<String>();
@@ -164,11 +203,8 @@ public class LocalConfig {
 
         return new ProblemList(cluster, 
                 result.toArray(new String[result.size()]));
-        /**
-         * 
-         */
         
-    }
+    }*/
 
     public static String cluster() { 
         return cluster;
@@ -177,7 +213,7 @@ public class LocalConfig {
     public static String execDir() { 
         return execDir;
     }
-    
+
     private static int run(String [] cmd, StringBuilder out, StringBuilder err) { 
 
         RunProcess p = new RunProcess(cmd);

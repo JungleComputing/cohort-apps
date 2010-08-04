@@ -12,10 +12,10 @@ public class LaunchJob extends SimpleActivity {
     private final String input;
     private final int split;
     
-    public LaunchJob(ActivityIdentifier parent, Context c, String input, 
-            int split) {
+    public LaunchJob(ActivityIdentifier parent, Context c, int rank, 
+            String input, int split) {
         
-        super(parent, c);
+        super(parent, c, rank, false);
          
         this.input = input;
         this.split = split;

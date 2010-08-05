@@ -119,9 +119,15 @@ public class FileClient {
             long bytes = 0;
 
             while (bytes < total) { 
-
-                int read = in.read(buffer, 0, FileServer.BUFFER_SIZE);
-
+                
+                int size = FileServer.BUFFER_SIZE;
+                
+                if (total-bytes < FileServer.BUFFER_SIZE) { 
+                    size = (int) (total-bytes);
+                } 
+                
+                int read = in.read(buffer, 0, size);
+              
                 if (read == -1) { 
                     System.err.println("Unexpected end of stream!");
                     return;

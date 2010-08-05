@@ -188,6 +188,8 @@ public class FileServer {
         VirtualSocketFactory vsf = VirtualSocketFactory.createSocketFactory();
         ss = vsf.createServerSocket(port, 64, null);
    
+        System.out.println("FileServer running on: " + ss);
+        
         for (int i=0;i<workers;i++) { 
             new WorkerThread().start();
         }

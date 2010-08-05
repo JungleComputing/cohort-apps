@@ -222,7 +222,7 @@ public class FileServer {
     
     synchronized void enqueue(VirtualSocket s) { 
         waiting.addLast(s);
-        waiting.notifyAll();
+        notifyAll();
     }
     
     synchronized VirtualSocket dequeue() { 

@@ -20,9 +20,10 @@ public class FileServer {
 
     public static final int BUFFER_SIZE = 128*1024;
     
-    public static final byte OPCODE_LIST = 22;
-    public static final byte OPCODE_GET  = 33;
-    
+    public static final byte OPCODE_LIST = 11;
+    public static final byte OPCODE_GET  = 22;
+    public static final byte OPCODE_MGET  = 33;
+     
     public static final byte REPLY_LIST  = 42;
     public static final byte REPLY_FILE  = 53;
     public static final byte REPLY_ERROR = 65;
@@ -53,10 +54,7 @@ public class FileServer {
  
         private byte [] buffer = new byte[BUFFER_SIZE]; 
         
-        private void sendList(OutputStream out) throws IOException { 
-            
-            DataOutputStream dout = 
-                new DataOutputStream(new BufferedOutputStream(out));
+        private void sendList(DataOutputStream dout) throws IOException { 
             
             File [] files = dir.listFiles(filter);
     
@@ -71,17 +69,14 @@ public class FileServer {
             dout.flush();
         }
         
-        private void sendFile(OutputStream out, String filename) throws IOException { 
+        private void sendFile(DataOutputStream dout, String filename) throws IOException { 
  
-            // Unbuffered
-            DataOutputStream dout = new DataOutputStream(out);
-            
             File tmp = 
                 new File(dir.getCanonicalFile() + File.separator + filename);
             
             if (!tmp.exists() || !tmp.canRead() || !tmp.isFile()) { 
                 dout.writeByte(REPLY_ERROR);
-                dout.flush();
+                dout.writeUTF(filename);
                 return;
             }
             
@@ -89,6 +84,7 @@ public class FileServer {
             long bytes = 0;
             
             dout.writeByte(REPLY_FILE);
+            dout.writeUTF(filename);
             dout.writeLong(total);
             
             BufferedInputStream in = new BufferedInputStream(new FileInputStream(tmp));
@@ -108,7 +104,9 @@ public class FileServer {
                 } 
             } catch (Exception e) {
                 System.err.println("Failed to fully send " + tmp.getPath());
-            }       
+            }
+       
+            in.close();
         }
      
         private void handle() {
@@ -116,26 +114,43 @@ public class FileServer {
             VirtualSocket s = dequeue();
            
             DataInputStream din = null;
-            OutputStream out = null;
+            DataOutputStream dout = null;
             
             try { 
                 s.setSoTimeout(1000);
                 
                 din = new DataInputStream(
                         new BufferedInputStream(s.getInputStream()));
-                
-                out = s.getOutputStream();
-                
+              
+                dout = new DataOutputStream(
+                        new BufferedOutputStream(s.getOutputStream()));
+          
                 int opcode = din.readByte();
                 
                 switch (opcode) {
-                case OPCODE_GET: 
+                case OPCODE_GET:
+                    
                     String filename = din.readUTF();
-                    sendFile(out, filename);
+                    sendFile(dout, filename);
+                    break;
+                
+                case OPCODE_MGET: 
+                    int count = din.readInt();
+                   
+                    String [] files = new String[count];
+                    
+                    for (int i=0;i<count;i++) { 
+                        files[i] = din.readUTF();
+                    }
+                
+                    for (int i=0;i<count;i++) { 
+                        sendFile(dout, files[i]);
+                    }
+                    
                     break;
                     
                 case OPCODE_LIST:
-                    sendList(out);
+                    sendList(dout);
                     break;
                     
                 default:
@@ -146,8 +161,8 @@ public class FileServer {
                 e.printStackTrace();
             } finally { 
                 try { 
-                    out.flush();
-                    out.close();
+                    dout.flush();
+                    dout.close();
                 } catch (Exception e) {
                     // ignored
                 }

@@ -92,7 +92,13 @@ public class FileServer {
             try { 
                 while (bytes < total) { 
 
-                    int read = in.read(buffer, 0, BUFFER_SIZE);
+                    int size = BUFFER_SIZE;
+                    
+                    if (total-bytes < BUFFER_SIZE) { 
+                        size = (int) (total-bytes);
+                    } 
+                    
+                    int read = in.read(buffer, 0, size);
 
                     if (read == -1) { 
                         System.err.println("Unexpected end of file: " + tmp.getPath());

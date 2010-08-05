@@ -101,6 +101,8 @@ public class FileClient {
         DataInputStream in = null;
         BufferedOutputStream fout = null;
         
+        long start = System.currentTimeMillis();
+        
         try { 
             fout = new BufferedOutputStream(new FileOutputStream(target));
             
@@ -113,6 +115,8 @@ public class FileClient {
             out.writeByte(FileServer.OPCODE_GET);
             out.writeUTF(filename);
             out.flush();
+       
+            long t1 = System.currentTimeMillis();
             
             byte opcode = in.readByte();
             
@@ -143,6 +147,10 @@ public class FileClient {
             } 
 
             fout.close();
+            
+            long t2 = System.currentTimeMillis();
+            
+            System.out.println("Total time " + (t2-start) + " connect "+ (t1-start) + " transfer " + (t2-t1));
             
         } catch (Exception e) {
       

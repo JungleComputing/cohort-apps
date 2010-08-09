@@ -5,20 +5,34 @@ import ibis.util.RunProcess;
 import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
+import java.util.Arrays;
+
+import datachallenge.util.FileClient;
 
 public class LocalConfig {
 
+    private static final String DEFAULT_EXEC = "dach.sh";
+    private static final String DEFAULT_TMP = "/tmp";
+    
     private static boolean configured = false;
-
+    
+    private static boolean isMaster = false;
+    
+    private static boolean useFileServer = false;
+    private static FileClient fileClient;
+    
     private static String cluster; 
-
+    private static String [] clusters; 
+    
     private static String dataDir; 
     private static String execDir; 
-    private static String tmpDir; 
-
+    private static String tmpDir = DEFAULT_TMP; 
+    private static String exec = DEFAULT_EXEC; 
+    
     private static String executable; 
 
     private static String cpExec = "/bin/cp";
+    
     
     static class DataFilter implements FileFilter {
 
@@ -36,6 +50,68 @@ public class LocalConfig {
         } 
     }
 
+    public static synchronized void configure(String [] args) throws Exception { 
+
+        ArrayList<String> c = new ArrayList<String>();
+            
+        for (int i=0;i<args.length;i++) { 
+            
+            String tmp = args[i];
+                
+            if (tmp.equalsIgnoreCase("-dataDir")) { 
+                dataDir = args[++i];
+            } else if (tmp.equalsIgnoreCase("-execDir")) { 
+                execDir = args[++i];
+            } else if (tmp.equalsIgnoreCase("-tmpDir")) { 
+                tmpDir = args[++i];
+            } else if (tmp.equalsIgnoreCase("-exec")) { 
+                exec = args[++i];
+            } else if (tmp.equalsIgnoreCase("-cluster")) { 
+                cluster = args[++i];
+            } else if (tmp.equalsIgnoreCase("-master")) { 
+                isMaster = true;
+            } else if (tmp.equalsIgnoreCase("-fileserver")) { 
+                useFileServer = true;
+                fileClient = new FileClient(args[++i]);
+            } else if (tmp.equalsIgnoreCase("-clusters")) { 
+                 
+                while (i+1 < args.length && !args[i+1].startsWith("-")) { 
+                    c.add(args[++i]);
+                }
+            }
+        }
+        if (dataDir == null) { 
+            throw new Exception("Data directory not set!");
+        }
+
+        if (execDir == null) { 
+            throw new Exception("Exec directory not set!");
+        }
+
+        if (tmpDir == null) { 
+            throw new Exception("Exec directory not set!");
+        }
+
+        if (cluster == null) { 
+            throw new Exception("Cluster name not set!");
+        }
+
+        if (c.size() == 0) { 
+            throw new Exception("Cluster list set!");
+        }
+
+        executable = execDir + File.separator + exec;
+
+        if (!fileExists(executable)) { 
+            throw new Exception("Executable not found: " + executable);
+        }
+
+        clusters = c.toArray(new String [c.size()]);
+        
+        configured = true;
+    }
+    
+    /*
     public static synchronized void configure(String clusterName, String dataD, 
             String execD, String tmpD, String execN) throws Exception { 
 
@@ -80,11 +156,13 @@ public class LocalConfig {
 
         configured = true;
     }
-
+     */
+    
     public static synchronized boolean isConfigured() {
         return configured;
     }
 
+    /*
     private static boolean directoryExists(File dir) { 
         return dir.exists() && dir.canRead() && dir.isDirectory();
     }
@@ -92,6 +170,7 @@ public class LocalConfig {
     private static boolean directoryExists(String dir) {
         return directoryExists(new File(dir));
     }
+    */
 
     private static boolean fileExists(File file) { 
         return file.exists() && file.canRead() && !file.isDirectory();
@@ -192,16 +271,45 @@ public class LocalConfig {
         return true;            
     }
 
+    private static boolean remoteCopy(String [] remoteFiles, String localDir) 
+        throws Exception {
+        
+        long start = System.currentTimeMillis();
+
+        System.out.println("Copying remote files: " 
+                + Arrays.toString(remoteFiles) 
+                + " to local dir "  + localDir);
+
+        fileClient.get(remoteFiles, new File(localDir));
+
+        long end = System.currentTimeMillis();
+
+        System.out.println("Remote copying " + Arrays.toString(remoteFiles) 
+                 + " took " + (end-start) + " ms.");
+
+        return true;            
+    }
+
+    
     public static String cluster() { 
         return cluster;
     }
-
+    
+    public static boolean isMaster() { 
+        return isMaster;
+    }
+   
+    public static String [] getClusters() { 
+        return clusters;
+    }
+    
     public static Result compare(String input) {
 
         long start = System.currentTimeMillis();
         
         String before = dataDir + File.separator + beforeName(input);
         String after = dataDir + File.separator + afterName(input);
+        
         String tmpBefore = tmpDir + File.separator + beforeName(input);
         String tmpAfter = tmpDir + File.separator + afterName(input);
 
@@ -218,15 +326,26 @@ public class LocalConfig {
             if (!fileExists(after)) { 
                 throw new Exception("After file not found: " + after);
             }
+            
+            if (useFileServer) {
+                
+                String [] files = new String [] { before, after }; 
+                
+                if (!remoteCopy(files, tmpDir)) { 
+                    throw new Exception("Failed to copy files: " 
+                            + Arrays.toString(files) + " to " + tmpDir);
+                }
+            } else { 
+                
+                if (!localCopy(before, tmpBefore)) { 
+                    throw new Exception("Failed to copy before file: " + before 
+                            + " to " + tmpBefore);
+                }
 
-            if (!localCopy(before, tmpBefore)) { 
-                throw new Exception("Failed to copy before file: " + before 
-                        + " to " + tmpBefore);
-            }
-
-            if (!localCopy(after, tmpAfter)) {
-                throw new Exception("Failed to copy after file: " + after 
-                        + " to " + tmpAfter);
+                if (!localCopy(after, tmpAfter)) {
+                    throw new Exception("Failed to copy after file: " + after 
+                            + " to " + tmpAfter);
+                }
             }
            
             long copy = System.currentTimeMillis();
@@ -241,13 +360,16 @@ public class LocalConfig {
             int exit = p.getExitStatus();           
 
             if (exit != 0) {
-                throw new Exception("Failed to run comparison: (stderr: " + err + ")\n");
+                throw new Exception("Failed to run comparison: (stderr: " + err 
+                        + ")\n");
             }
 
             long end = System.currentTimeMillis();
         
-            System.out.println("Processing " + input + " took " + (end-copy) + " ms.");
-            System.out.println("Total time " + input + " is " + (end-start) + " ms.");
+            System.out.println("Processing " + input + " took " + (end-copy) 
+                    + " ms.");
+            System.out.println("Total time " + input + " is " + (end-start) 
+                    + " ms.");
             
             return new Result(input, cluster, copy-start, end-copy, out);
             

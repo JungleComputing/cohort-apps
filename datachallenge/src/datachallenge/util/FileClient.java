@@ -151,7 +151,7 @@ public class FileClient {
         }
     }
 
-    public void get(String [] files, File dir) { 
+    public void get(String [] files, File dir) throws Exception { 
 
         byte [] buffer = new byte[FileServer.BUFFER_SIZE];
 
@@ -160,8 +160,6 @@ public class FileClient {
         DataInputStream in = null;
         BufferedOutputStream fout = null;
 
-        long start = System.currentTimeMillis();
-
         try { 
             s = factory.createClientSocket(serverAddress, 10000, true, null);
             s.setSoTimeout(60000);
@@ -169,21 +167,12 @@ public class FileClient {
             out = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
             in = new DataInputStream(new BufferedInputStream(s.getInputStream()));
 
-            long t1 = System.currentTimeMillis();
-
             if (files.length == 1) { 
                 out.writeByte(FileServer.OPCODE_GET);
                 out.writeUTF(files[0]);
                 out.flush();
 
-                long t2 = System.currentTimeMillis();
-                
                 readReply(in, buffer, dir);
-               
-                long t3 = System.currentTimeMillis();
-                
-                System.out.println("Total time " + (t2-start) + " connect " 
-                        + (t1-start) + " transfer " + (t3-t2));
                 
             } else { 
                 out.writeByte(FileServer.OPCODE_MGET);
@@ -194,24 +183,14 @@ public class FileClient {
                 }
                 out.flush();
 
-                long t2 = System.currentTimeMillis();
-
                 for (int i=0;i<files.length;i++) { 
                     readReply(in, buffer, dir);
                 }            
-
-                long t3 = System.currentTimeMillis();
-
-                System.out.println("Total time " + (t2-start) + " connect " 
-                        + (t1-start) + " transfer " + (t3-t2));
-          
             }
-
 
         } catch (Exception e) {
 
-            System.err.println("Failed to retrieve list! " + e);
-            e.printStackTrace(System.err);
+            throw new Exception("Failed to retrieve files! ", e);
 
         } finally { 
 

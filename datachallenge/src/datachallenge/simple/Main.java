@@ -16,18 +16,6 @@ import ibis.cohort.context.UnitContext;
 
 public class Main {
 
-    private static final String DEFAULT_EXEC = "dach.sh";
-    private static final String DEFAULT_TMP = "/tmp";
-     
-    private static String dataDir; 
-    private static String execDir; 
-    private static String tmpDir = DEFAULT_TMP; 
-    private static String exec = DEFAULT_EXEC; 
-    private static String cluster; 
-    private static String [] clusters; 
-    
-    private static boolean isMaster = false;
-    
     static class Job { 
         
         public final String problem;
@@ -57,74 +45,7 @@ public class Main {
     }
 
     private static HashMap<String, Job> jobs = new HashMap<String, Job>();
-    
-    private static void parseCommandLine(String [] args) throws Exception { 
-    
-        ArrayList<String> c = new ArrayList<String>();
-        
-        for (int i=0;i<args.length;i++) { 
-            
-            String tmp = args[i];
-            
-            if (tmp.equalsIgnoreCase("-dataDir")) { 
-                dataDir = args[++i];
-            } else if (tmp.equalsIgnoreCase("-execDir")) { 
-                execDir = args[++i];
-            } else if (tmp.equalsIgnoreCase("-tmpDir")) { 
-                tmpDir = args[++i];
-            } else if (tmp.equalsIgnoreCase("-exec")) { 
-                exec = args[++i];
-            } else if (tmp.equalsIgnoreCase("-cluster")) { 
-                cluster = args[++i];
-            } else if (tmp.equalsIgnoreCase("-master")) { 
-                isMaster = true;
-            } else if (tmp.equalsIgnoreCase("-clusters")) { 
-             
-                while (i+1 < args.length && !args[i+1].startsWith("-")) { 
-                    c.add(args[++i]);
-                }
-            }
-        }
-    
-        if (dataDir == null) { 
-            throw new Exception("Data directory not set!");
-        }
    
-        if (execDir == null) { 
-            throw new Exception("Exec directory not set!");
-        }
-        
-        if (tmpDir == null) { 
-            throw new Exception("Exec directory not set!");
-        }
-        
-        if (cluster == null) { 
-            throw new Exception("Cluster name not set!");
-        }
-        
-        if (c.size() == 0) { 
-            throw new Exception("Cluster list set!");
-        }
-   
-        clusters = c.toArray(new String [c.size()]);
-    }
-    
-    /*
-    private static Context generateContext(String [] clusters) { 
-        
-        if (clusters.length == 1) { 
-            return new UnitContext(clusters[0]);
-        }
-       
-        ContextSet set = new ContextSet(new UnitContext(clusters[0]));
-        
-        for (int i=1;i<clusters.length;i++) { 
-            set.add(new UnitContext(clusters[i]));
-        }
-        
-        return set;
-    }
-    */
     private static void processList(ProblemList l) { 
         
         UnitContext c = new UnitContext(l.cluster);
@@ -150,21 +71,22 @@ public class Main {
         try { 
             ArrayList<Result> res = new ArrayList<Result>();
             
-            parseCommandLine(args);
+            LocalConfig.configure(args);
             
-            LocalConfig.configure(cluster, dataDir, execDir, tmpDir, exec);
+            String [] clusters = LocalConfig.getClusters();
             
             long start = System.currentTimeMillis();
             
             Cohort cohort = CohortFactory.createCohort();
             cohort.activate();
         
-            if (isMaster){ 
+            if (LocalConfig.isMaster()){ 
                 // Wohoo! I'm in charge.
 
                 // First send a 'list' job to all clusters
                 MultiEventCollector c = new MultiEventCollector(
                         new UnitContext("master"), clusters.length);
+                
                 ActivityIdentifier id = cohort.submit(c);
                 
                 for (String cluster : clusters) { 

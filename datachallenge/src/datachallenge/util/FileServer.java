@@ -110,6 +110,7 @@ public class FileServer {
                 } 
             } catch (Exception e) {
                 System.err.println("Failed to fully send " + tmp.getPath());
+                e.printStackTrace();
             }
        
             in.close();
@@ -124,6 +125,7 @@ public class FileServer {
             
             try { 
                 s.setSoTimeout(1000);
+                s.setTcpNoDelay(true);
                 
                 din = new DataInputStream(
                         new BufferedInputStream(s.getInputStream()));

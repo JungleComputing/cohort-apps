@@ -5,7 +5,6 @@ import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.UnknownHostException;
 
@@ -101,7 +100,7 @@ public class FileClient {
             byte opcode = in.readByte();
             String file = in.readUTF();
 
-            if (opcode == FileServer.REPLY_ERROR) { 
+            if (opcode == FileServer.REPLY_ERROR) {
                 System.err.println("Failed to retrieve file! " + file);
                 return;
             }
@@ -163,6 +162,7 @@ public class FileClient {
         try { 
             s = factory.createClientSocket(serverAddress, 10000, true, null);
             s.setSoTimeout(60000);
+            s.setTcpNoDelay(true);
 
             out = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
             in = new DataInputStream(new BufferedInputStream(s.getInputStream()));
@@ -189,6 +189,9 @@ public class FileClient {
             }
 
         } catch (Exception e) {
+            
+            System.out.println("Failed to retrieve files!");
+            e.printStackTrace(System.err);
 
             throw new Exception("Failed to retrieve files! ", e);
 

@@ -6,8 +6,10 @@ import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import datachallenge.util.FileClient;
+import datachallenge.util.FileInfo;
 
 public class LocalConfig {
 
@@ -201,31 +203,58 @@ public class LocalConfig {
         ArrayList<String> result = new ArrayList<String>();
         ArrayList<Long> sizes = new ArrayList<Long>();
         
-        File dir = new File(dataDir);
-        File [] files = dir.listFiles(new DataFilter());
+        if (useFileServer) { 
+         
+            FileInfo [] info = fileClient.list();
+            
+            HashMap<String, FileInfo> set = new HashMap<String, FileInfo>();
+            
+            for (FileInfo f : info) { 
 
-        for (File f : files) { 
+                String problem = problemName(f.filename);
 
-            String problem = problemName(f.getName());
+                System.out.println("* Potential problem set: " + problem + " ( " 
+                        + f.filename + ")");
 
-            System.out.println("Potential problem set: " + problem + " ( " 
-                    + f.getName() + ")");
+                FileInfo other = set.remove(problem);
+                
+                if (other != null) { 
+                    System.out.println("Add pair " + problem + " " + other.size + " " + f.size);
+                    result.add(problem);
+                    sizes.add(other.size + f.size);                    
+                } else { 
+                    set.put(problem, f);
+                }
+            }
+            
+        } else { 
+         
+            File dir = new File(dataDir);
+            File [] files = dir.listFiles(new DataFilter());
 
-            if (fileExists(dataDir + File.separator + afterName(problem))) {
-                System.out.println("Add pair " + problem);
-                result.add(problem);
-                sizes.add(f.length());
+            for (File f : files) { 
+
+                String problem = problemName(f.getName());
+
+                System.out.println("Potential problem set: " + problem + " ( " 
+                        + f.getName() + ")");
+
+                if (fileExists(dataDir + File.separator + afterName(problem))) {
+                    System.out.println("Add pair " + problem);
+                    result.add(problem);
+                    sizes.add(f.length());
+                }
             }
         }
-
+        
         System.out.println("Returning new ProblemList");
 
         long [] tmp = new long[sizes.size()];
-        
+
         for (int i=0;i<sizes.size();i++) { 
             tmp[i] = sizes.get(i);
         }
-        
+
         return new ProblemList(cluster, 
                 result.toArray(new String[result.size()]), tmp);
     }
@@ -329,7 +358,7 @@ public class LocalConfig {
             
             if (useFileServer) {
                 
-                String [] files = new String [] { before, after }; 
+                String [] files = new String [] { beforeName(input), afterName(input) }; 
                 
                 if (!remoteCopy(files, tmpDir)) { 
                     throw new Exception("Failed to copy files: " 

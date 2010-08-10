@@ -34,11 +34,41 @@ public class CompareResult implements Serializable {
     
     public String toString() { 
 
-        // TODO: improve this print!!!!
         if (success) { 
             return input  + " succesfully compared at " + cluster;
         } else { 
-            return input  + " failed to compared at " + cluster;
+            StringBuilder tmp = new StringBuilder(input);
+            tmp.append(" failed to compared at ");
+            tmp.append(cluster);
+            tmp.append("\n");
+            
+            for (ScriptResult r : detect) { 
+                tmp.append("Detect stdout:\n");
+                tmp.append(new String(r.out));
+                tmp.append("Detect stderr:\n");
+                tmp.append(new String(r.err));
+            }
+
+            tmp.append("Match stdout:\n");
+            tmp.append(new String(match.out));
+            tmp.append("Match stderr:\n");
+            tmp.append(new String(match.err));
+            
+            for (ScriptResult r : sub) { 
+                tmp.append("Sub stdout:\n");
+                tmp.append(new String(r.out));
+                tmp.append("Sub stderr:\n");
+                tmp.append(new String(r.err));
+            }
+            
+            tmp.append("Post stdout:\n");
+            tmp.append(new String(match.out));
+            tmp.append("Post stderr:\n");
+            tmp.append(new String(match.err));
+            
+            tmp.append("\n");
+            
+            return tmp.toString();
         }
     }
 }

@@ -119,7 +119,10 @@ public class FileServer {
  
             long end = System.currentTimeMillis();
             
-            System.out.println("Send " + filename + " in " + (end-start) + "ms");
+            double mbit = ((total * 8.0) / ((end-start)/1000.0)) / (1000.0*1000.0);   
+            
+            System.out.println("Send " + filename + " / " + total + " in " 
+                    + (end-start) + " ms " + mbit + " Mbit/s");
         }
      
         private void handle() {
@@ -144,8 +147,6 @@ public class FileServer {
                 int opcode = din.readByte();
                 
                 long end = System.currentTimeMillis();
-                
-                System.out.println("Opcode read in " + (end-start));
                 
                 switch (opcode) {
                 case OPCODE_GET:

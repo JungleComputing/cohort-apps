@@ -1,5 +1,10 @@
 package datachallenge.util;
 
+import ibis.smartsockets.virtual.InitializationException;
+import ibis.smartsockets.virtual.VirtualServerSocket;
+import ibis.smartsockets.virtual.VirtualSocket;
+import ibis.smartsockets.virtual.VirtualSocketFactory;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -8,13 +13,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.LinkedList;
-
-import ibis.smartsockets.virtual.InitializationException;
-import ibis.smartsockets.virtual.VirtualServerSocket;
-import ibis.smartsockets.virtual.VirtualSocket;
-import ibis.smartsockets.virtual.VirtualSocketFactory;
 
 public class FileServer {
 
@@ -71,6 +70,8 @@ public class FileServer {
         
         private void sendFile(DataOutputStream dout, String filename) throws IOException { 
  
+            long start = System.currentTimeMillis();
+            
             File tmp = 
                 new File(dir.getCanonicalFile() + File.separator + filename);
             
@@ -113,13 +114,20 @@ public class FileServer {
                 e.printStackTrace();
             }
        
+            dout.flush();
             in.close();
+ 
+            long end = System.currentTimeMillis();
+            
+            System.out.println("Send " + filename + " in " + (end-start) + "ms");
         }
      
         private void handle() {
             
             VirtualSocket s = dequeue();
            
+            long start = System.currentTimeMillis();
+            
             DataInputStream din = null;
             DataOutputStream dout = null;
             
@@ -134,6 +142,10 @@ public class FileServer {
                         new BufferedOutputStream(s.getOutputStream()));
           
                 int opcode = din.readByte();
+                
+                long end = System.currentTimeMillis();
+                
+                System.out.println("Opcode read in " + (end-start));
                 
                 switch (opcode) {
                 case OPCODE_GET:

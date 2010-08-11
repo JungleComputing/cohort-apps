@@ -161,7 +161,7 @@ public class FileClient {
 
         try { 
             s = factory.createClientSocket(serverAddress, 10000, true, null);
-            s.setSoTimeout(60000);
+            s.setSoTimeout(600000);
             s.setTcpNoDelay(true);
 
             out = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));

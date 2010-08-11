@@ -115,7 +115,7 @@ public class CompareJob extends Activity {
             
             for (int i=0;i<split;i++) { 
                 cohort.submit(new SubJob(identifier(), getContext(), tmpDir, 
-                        before, after, 1000, i, split));
+                        before, after, 1000, i+1, split));
             }
         }
     }

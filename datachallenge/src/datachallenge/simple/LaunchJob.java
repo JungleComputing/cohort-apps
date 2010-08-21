@@ -9,12 +9,11 @@ public class LaunchJob extends SimpleActivity {
 
     private static final long serialVersionUID = -6249140235894579296L;
 
-    private final String input;
+    private final Job job;
     
-    public LaunchJob(ActivityIdentifier parent, Context c, int rank, String input) {
-        
+    public LaunchJob(ActivityIdentifier parent, Context c, int rank, Job job) {        
         super(parent, c, rank, false);
-        this.input = input;
+        this.job = job;
     }
 
     @Override
@@ -25,7 +24,7 @@ public class LaunchJob extends SimpleActivity {
         // it cannot move to another machine.
         
         Context c = new UnitContext(LocalConfig.cluster());
-        cohort.submit(new CompareJob(parent, c, input));
+        cohort.submit(new CompareJob(parent, c, getRank(), job));
     }
 
 }

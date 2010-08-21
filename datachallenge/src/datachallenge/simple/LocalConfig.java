@@ -2,26 +2,43 @@ package datachallenge.simple;
 
 import ibis.util.RunProcess;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileReader;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-
-import datachallenge.util.FileClient;
-import datachallenge.util.FileInfo;
+import java.util.StringTokenizer;
 
 public class LocalConfig {
 
+	public static final int NO_CONTEXT       = 0;
+	public static final int LOCATION_CONTEXT = 1;
+	public static final int SIZE_CONTEXT     = 2;
+	
+	private static int contextType;
+	private static boolean sorted;
+	
     private static final String DEFAULT_EXEC = "dach.sh";
     private static final String DEFAULT_TMP = "/tmp";
+    private static final String DEFAULT_CONFIGURATION = "location_and_sorted";
+    
+    private static String configuration;
     
     private static boolean configured = false;
     
     private static boolean isMaster = false;
     
+    private static boolean useHTTPFileServer = false;
+    private static String httpServer;
+    private static String problemList;
+    private static String httpCpExec = "/usr/bin/wget";
+
+    /*
     private static boolean useFileServer = false;
     private static FileClient fileClient;
+    */
     
     private static String cluster; 
     private static String [] clusters; 
@@ -35,6 +52,21 @@ public class LocalConfig {
 
     private static String cpExec = "/bin/cp";
     
+    public static class Size { 
+    	
+    	public final String name;
+    	public final long from; 
+    	public final long to;
+    	
+		public Size(String name, long from, long to) {
+			super();
+			this.name = name;
+			this.from = from;
+			this.to = to;
+		}  
+    }
+
+    private static ArrayList<Size> sizes; 
     
     static class DataFilter implements FileFilter {
 
@@ -55,7 +87,7 @@ public class LocalConfig {
     public static synchronized void configure(String [] args) throws Exception { 
 
         ArrayList<String> c = new ArrayList<String>();
-            
+        
         for (int i=0;i<args.length;i++) { 
             
             String tmp = args[i];
@@ -70,18 +102,44 @@ public class LocalConfig {
                 exec = args[++i];
             } else if (tmp.equalsIgnoreCase("-cluster")) { 
                 cluster = args[++i];
+            } else if (tmp.equalsIgnoreCase("-configuration")) { 
+                configuration = args[++i];
             } else if (tmp.equalsIgnoreCase("-master")) { 
                 isMaster = true;
+                
+            } else if (tmp.equalsIgnoreCase("-size")) { 
+                String name = args[++i];
+                long start = Long.parseLong(args[++i]);
+                long end = Long.parseLong(args[++i]);
+            
+                if (end == -1) { 
+                	end = Long.MAX_VALUE;
+                }
+                
+                Size s = new Size(name, start, end);
+                
+                if (sizes == null) { 
+                	sizes = new ArrayList<LocalConfig.Size>();
+                }
+                
+                sizes.add(s);
+                
+                /*
             } else if (tmp.equalsIgnoreCase("-fileserver")) { 
                 useFileServer = true;
                 fileClient = new FileClient(args[++i]);
-            } else if (tmp.equalsIgnoreCase("-clusters")) { 
-                 
+                */
+            } else if (tmp.equalsIgnoreCase("-httpserver")) { 
+                useHTTPFileServer = true;
+                httpServer = args[++i];
+                problemList = args[++i];
+            } else if (tmp.equalsIgnoreCase("-clusters")) {                  
                 while (i+1 < args.length && !args[i+1].startsWith("-")) { 
                     c.add(args[++i]);
                 }
             }
         }
+
         if (dataDir == null) { 
             throw new Exception("Data directory not set!");
         }
@@ -109,6 +167,35 @@ public class LocalConfig {
         }
 
         clusters = c.toArray(new String [c.size()]);
+       
+        sorted = false;
+        contextType = LOCATION_CONTEXT;
+        
+        if (configuration == null) {
+        	sorted = true;
+        	contextType = LOCATION_CONTEXT;
+        } else if (configuration.equals("random")) {
+        	sorted = false;
+        	contextType = NO_CONTEXT;
+        } else if (configuration.equals("sorted")) {
+        	sorted = true;
+        	contextType = NO_CONTEXT;
+        } else if (configuration.equals("location_and_sorted")) {
+        	sorted = true;
+        	contextType = LOCATION_CONTEXT;
+        } else if (configuration.equals("location")) {
+        	sorted = false;
+        	contextType = LOCATION_CONTEXT;
+        } else if (configuration.equals("size")) {
+        	sorted = false;
+        	contextType = SIZE_CONTEXT;
+        	
+        	if (sizes == null) { 
+        		throw new Exception("Selected size context without defining sizes!");
+        	}        	
+        } else { 
+        	throw new Exception("Unknown configuration: " + configuration);
+        }
         
         configured = true;
     }
@@ -164,6 +251,22 @@ public class LocalConfig {
         return configured;
     }
 
+    public static int getContextConfiguration() {
+        return contextType;
+    }
+    
+    public static boolean getSortedConfiguration() {
+        return sorted;
+    }
+    
+    public static Size [] getSizes() {
+    	if (sizes == null) { 
+    		return new Size[0];
+    	}
+    	
+    	return sizes.toArray(new Size[sizes.size()]);
+    }
+    
     /*
     private static boolean directoryExists(File dir) { 
         return dir.exists() && dir.canRead() && dir.isDirectory();
@@ -193,16 +296,66 @@ public class LocalConfig {
     private static String afterName(String problem) { 
         return problem + "_t1.fits";
     }
+    
+    private static Problem parseLine(String line) { 
+    	
+    	StringTokenizer tok = new StringTokenizer(line);
+    	
+    	try { 
+    		String id = tok.nextToken();
+    		String beforeFile = tok.nextToken();
+    		long beforeSize = Long.parseLong(tok.nextToken());
+    		
+    		String afterFile = tok.nextToken();
+    		long afterSize = Long.parseLong(tok.nextToken());
+    		
+    		return new Problem(id, beforeFile, beforeSize, afterFile, afterSize);
+    	
+    	} catch (Exception e) {
+    		System.out.println("Failed to parse problem line: " + line + " " + e);
+    		e.printStackTrace();
+    		return null;
+    	}
+    }
+    
+    private static ProblemList parseProblemList(String problemFile) { 
+    	
+    	ProblemList list = new ProblemList(cluster, httpServer);
+    	
+    	try { 
+    		BufferedReader r = new BufferedReader(new FileReader(new File(problemFile)));
+    	
+    		String line = r.readLine().trim();
+    		
+    		while (line != null && line.length() > 0) { 
+    			
+    			Problem p = parseLine(line);
+    			
+    			if (p != null) { 
+    				list.addProblem(p);
+    			}
+    			
+    			line = r.readLine().trim();
+    		}
+    		
+    	} catch (Exception e) {
+    	
+    		System.out.println("Failed to parse problem list file: " + problemFile + " " + e);
+    		e.printStackTrace();
 
+    		list.addException(e);
+    	}
+    	
+    	return list;
+    }
+    
     public static ProblemList listProblems() throws Exception { 
 
         if (!isConfigured()) { 
             throw new Exception("LocalConfig not configured!");
         }
-
-        ArrayList<String> result = new ArrayList<String>();
-        ArrayList<Long> sizes = new ArrayList<Long>();
         
+        /*
         if (useFileServer) { 
          
             FileInfo [] info = fileClient.list();
@@ -227,36 +380,49 @@ public class LocalConfig {
                 }
             }
             
+        } else*/
+        if (useHTTPFileServer) {
+        	
+            StringBuilder stdout = new StringBuilder();
+            StringBuilder stderr = new StringBuilder();
+
+            int exit = run(new String [] { httpCpExec, httpServer + "/" + problemList, "-O", tmpDir + File.separator + "problemList" }, stdout, stderr); 
+
+            if (exit != 0) {
+                System.out.println("Failed to retrieve problem list " + httpServer + "/" + problemList   
+                		+ " (stdout: " + stdout + ") (stderr: " + stderr + ")\n");
+            }
+
+            return parseProblemList(tmpDir + File.separator + "problemList");
+            
         } else { 
          
+        	ProblemList list = new ProblemList(cluster, null);
+        	
             File dir = new File(dataDir);
             File [] files = dir.listFiles(new DataFilter());
 
-            for (File f : files) { 
+            for (File before : files) { 
 
-                String problem = problemName(f.getName());
+                String problem = problemName(before.getName());
 
                 System.out.println("Potential problem set: " + problem + " ( " 
-                        + f.getName() + ")");
+                        + before.getName() + ")");
 
-                if (fileExists(dataDir + File.separator + afterName(problem))) {
-                    System.out.println("Add pair " + problem);
-                    result.add(problem);
-                    sizes.add(f.length());
+                File after = new File(dataDir + File.separator + afterName(problem));
+                
+                if (fileExists(after)) {
+                    
+                	System.out.println("Add pair " + problem);
+                    
+                    Problem p = new Problem(problem, before.getName(), before.length(), after.getName(), after.length());
+                    
+                    list.addProblem(p);
                 }
             }
+            
+            return list;
         }
-        
-        System.out.println("Returning new ProblemList");
-
-        long [] tmp = new long[sizes.size()];
-
-        for (int i=0;i<sizes.size();i++) { 
-            tmp[i] = sizes.get(i);
-        }
-
-        return new ProblemList(cluster, 
-                result.toArray(new String[result.size()]), tmp);
     }
 
     public static int run(String [] cmd, StringBuilder out, StringBuilder err) { 
@@ -300,6 +466,7 @@ public class LocalConfig {
         return true;            
     }
 
+    /*
     private static boolean remoteCopy(String [] remoteFiles, String localDir) 
         throws Exception {
         
@@ -310,7 +477,7 @@ public class LocalConfig {
                 + " to local dir "  + localDir);
 
         fileClient.get(remoteFiles, new File(localDir));
-
+        
         long end = System.currentTimeMillis();
 
         System.out.println("Remote copying " + Arrays.toString(remoteFiles) 
@@ -318,7 +485,64 @@ public class LocalConfig {
 
         return true;            
     }
+    */
+    
 
+    private static boolean remoteCopy(String remoteFile, String localFile) 
+    	throws Exception {
+    
+    	long start = System.currentTimeMillis();
+
+    	String uri = httpServer + "/" + remoteFile;
+    	
+    	System.out.println("Copying remote file " + uri
+    			+ " to local file "  + localFile);
+
+    	StringBuilder stdout = new StringBuilder();
+        StringBuilder stderr = new StringBuilder();
+
+        int exit = run(new String [] { httpCpExec, uri, "-O", localFile }, stdout, stderr); 
+
+        if (exit != 0) {
+            System.out.println("Failed to remotely copy file " +  uri
+                + " (stdout: " + stdout + ") (stderr: " + stderr + ")\n");
+            return false;
+        }
+    	
+    	long end = System.currentTimeMillis();
+
+    	System.out.println("Remote copying " +  uri
+    			+ " took " + (end-start) + " ms.");
+
+    	return true;            
+    }
+
+    private static boolean remoteCopy(String server, String remoteFile, String localFile) { 
+	
+    	long start = System.currentTimeMillis();
+
+    	String uri = server + "/" + remoteFile;
+	
+    	System.out.println("Copying remote file " + uri + " to local file "  + localFile);
+
+    	StringBuilder stdout = new StringBuilder();
+    	StringBuilder stderr = new StringBuilder();
+
+    	int exit = run(new String [] { httpCpExec, uri, "-O", localFile }, stdout, stderr); 
+
+    	if (exit != 0) {
+    		System.out.println("Failed to remotely copy file " +  uri
+    				+ " (stdout: " + stdout + ") (stderr: " + stderr + ")\n");
+    		return false;
+    	}
+    	
+    	long end = System.currentTimeMillis();
+
+    	System.out.println("Remote copying " +  uri
+    			+ " took " + (end-start) + " ms.");
+    	
+    	return true;            
+    }
     
     public static String cluster() { 
         return cluster;
@@ -356,6 +580,7 @@ public class LocalConfig {
                 throw new Exception("After file not found: " + after);
             }
             
+            /*
             if (useFileServer) {
                 
                 String [] files = new String [] { beforeName(input), afterName(input) }; 
@@ -364,6 +589,20 @@ public class LocalConfig {
                     throw new Exception("Failed to copy files: " 
                             + Arrays.toString(files) + " to " + tmpDir);
                 }
+            } else */
+            
+            if (useHTTPFileServer) { 
+            
+            	if (!remoteCopy(before, tmpBefore)) { 
+                    throw new Exception("Failed to remote copy before file: " + before 
+                            + " to " + tmpBefore);
+                }
+
+                if (!remoteCopy(after, tmpAfter)) {
+                    throw new Exception("Failed to remote copy after file: " + after 
+                            + " to " + tmpAfter);
+                }
+            	
             } else { 
                 
                 if (!localCopy(before, tmpBefore)) { 
@@ -407,4 +646,103 @@ public class LocalConfig {
         }
     }
 
+    public static Result compare(Job job) {
+
+    	long start = System.currentTimeMillis();
+        
+    	if (useHTTPFileServer) { 
+    		return compareHTTPJob(job);
+    	} else { 
+    		// NOTE: this only works is the machines only gets local jobs! 
+    		return compare(problemName(job.beforeFileName));
+    	}
+    }
+
+    private static Result compareHTTPJob(Job job) { 
+        	
+    	if (!isConfigured()) {
+        	return new Result(job.ID, cluster, new Exception("LocalConfig not configured!"));
+        }
+        
+    	if (job.servers.size() == 0) { 
+    		return new Result(job.ID, cluster, new Exception("No servers found!"));
+        }
+        
+    	long start = System.currentTimeMillis();
+        
+    	String tmpBefore = tmpDir + File.separator + beforeName(job.ID);
+        String tmpAfter = tmpDir + File.separator + afterName(job.ID);
+
+        // Randomize the order of the servers, but ensure our local server is 
+        // tried first (provided it is on the list).
+        ArrayList<String> servers = job.servers;
+        
+        if (servers.size() > 1) {
+        	
+        	boolean containsLocalServer = servers.contains(httpServer);
+        	
+        	if (containsLocalServer) {
+        		servers.remove(httpServer);
+        	}
+        	
+        	if (servers.size() > 1) { 
+        		Collections.shuffle(servers);
+        	}
+        	
+        	if (containsLocalServer) { 
+        		servers.add(0, httpServer); 
+        	}	
+        } 
+        
+        int index = 0;
+        boolean success = false;
+        
+        while (!success && index < servers.size()) { 
+        	String server = servers.get(index++);
+        	success = remoteCopy(server, job.beforeFileName, tmpBefore);
+        } 
+
+        if (!success) { 
+        	return new Result(job.ID, cluster, new Exception("Failed to copy " + job.beforeFileName + " from any of the available servers!"));
+        }
+            	
+        index = 0;
+        success = false;
+        
+        while (!success && index < servers.size()) { 
+        	String server = servers.get(index++);
+        	success = remoteCopy(server, job.afterFileName, tmpAfter);
+        } 
+
+        if (!success) { 
+        	return new Result(job.ID, cluster, new Exception("Failed to copy " + job.afterFileName + " from any of the available servers!"));
+        }
+
+        long copy = System.currentTimeMillis();
+            
+        RunProcess p = new RunProcess(new String [] { executable, 
+        		"-w", tmpDir, tmpBefore, tmpAfter });
+            	
+        p.run();
+
+        byte [] out = p.getStdout();
+        String err = new String(p.getStderr());
+        
+        int exit = p.getExitStatus();           
+        
+        if (exit != 0) {
+        	return new Result(job.ID, cluster, new Exception("Failed to run comparison: (stderr: " + err + ")\n"));
+        }
+
+        long end = System.currentTimeMillis();
+        
+        System.out.println("Processing " + job.ID + " took " + (end-copy) + " ms.");
+        System.out.println("Total time " + job.ID + " is " + (end-start) + " ms.");
+            
+        System.out.println("Output on stderr:\n " + err);
+        
+        return new Result(job.ID, cluster, copy-start, end-copy, out);
+    }
+
+    
 }

@@ -8,18 +8,15 @@ public class CompareJob extends SimpleActivity {
 
     private static final long serialVersionUID = -653442064273941414L;
     
-    private final String input;
+    private final Job job;
     
-    public CompareJob(ActivityIdentifier parent, Context c, String input) {
-        super(parent, c, true);
-        this.input = input;
+    public CompareJob(ActivityIdentifier parent, Context c, int rank, Job job) {
+        super(parent, c, rank, true);
+        this.job = job;
     }
 
     @Override
     public void simpleActivity() throws Exception {
-        
-        System.out.println("Processing " + input + " " + getContext());
-       
-        cohort.send(identifier(), parent, LocalConfig.compare(input));
+        cohort.send(identifier(), parent, LocalConfig.compare(job));
     }
 }

@@ -325,7 +325,7 @@ public class LocalConfig {
     	try { 
     		BufferedReader r = new BufferedReader(new FileReader(new File(problemFile)));
     	
-    		String line = r.readLine().trim();
+    		String line = r.readLine();
     		
     		while (line != null && line.length() > 0) { 
     			
@@ -335,7 +335,7 @@ public class LocalConfig {
     				list.addProblem(p);
     			}
     			
-    			line = r.readLine().trim();
+    			line = r.readLine();
     		}
     		
     	} catch (Exception e) {

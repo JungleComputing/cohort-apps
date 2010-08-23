@@ -4,11 +4,14 @@ import ibis.cohort.Context;
 import ibis.cohort.context.OrContext;
 import ibis.cohort.context.UnitContext;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Job {
+public class Job implements Serializable {
     
-    public String ID;
+    private static final long serialVersionUID = 1609633321956465930L;
+
+	public String ID;
     
     public final String beforeFileName;
 	public final long beforeFileSize;

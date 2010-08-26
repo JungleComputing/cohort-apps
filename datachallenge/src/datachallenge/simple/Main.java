@@ -80,6 +80,8 @@ public class Main {
 			String [] clusters = LocalConfig.getClusters();
 
 			long start = System.currentTimeMillis();
+			
+			LocalConfig.startMonitor(500);
 
 			Cohort cohort = CohortFactory.createCohort();
 			cohort.activate();

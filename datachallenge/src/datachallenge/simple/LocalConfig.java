@@ -8,7 +8,6 @@ import java.io.FileFilter;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.StringTokenizer;
 
 public class LocalConfig {
@@ -36,6 +35,8 @@ public class LocalConfig {
     private static String problemList;
     private static String httpCpExec = "/usr/bin/wget";
 
+    private static String monitorExec = "monitor.sh";
+    
     /*
     private static boolean useFileServer = false;
     private static FileClient fileClient;
@@ -52,6 +53,55 @@ public class LocalConfig {
     private static String executable; 
 
     private static String cpExec = "/bin/cp";
+    
+    private static Monitor m;
+    
+    private static class Monitor extends Thread { 
+    	
+    	private long start;
+    	private boolean done = false;
+    	private int delay;
+    	
+    	public Monitor(int delay) { 
+    		this.delay = delay;
+    		this.start = System.currentTimeMillis();
+    	}
+    	
+    	public synchronized void done() { 
+    		done = true;
+    	}
+    	
+    	private synchronized boolean getDone() { 
+    		return done;
+    	}
+    	
+     	public void run() {
+
+	   		StringBuilder stdout = new StringBuilder();
+    		StringBuilder stderr = new StringBuilder();
+    		
+    		String executable = execDir + File.separator + monitorExec;
+
+    		while (!getDone()) { 
+    			try { 
+    				sleep(delay);
+    			} catch (Exception e) {
+					// TODO: handle exception
+				}
+    			
+        		int exit = LocalConfig.run(new String [] { executable }, stdout, stderr); 
+
+        		if (exit != 0) {
+        			System.out.println("Failed to monitor!");
+        		}
+   			
+        		long now = System.currentTimeMillis();
+        		
+        		System.out.println("MONITOR: " + now + " " + (now-start) + " " + stdout);
+    		}
+    	}
+    }
+    
     
     public static class Size { 
     	
@@ -85,6 +135,25 @@ public class LocalConfig {
         } 
     }
 
+    public synchronized static void startMonitor(int delay) { 
+    	
+    	if (m!= null) { 
+    		return;
+    	}
+    	
+    	m = new Monitor(delay);
+    	m.start();
+    }
+    
+    public synchronized static void stopMonitor() { 
+    	
+    	if (m == null) { 
+    		return;
+    	}
+    	
+    	m.done();
+    }
+   
     public static synchronized void configure(String [] args) throws Exception { 
 
         ArrayList<String> c = new ArrayList<String>();

@@ -3,16 +3,17 @@ package datachallenge.workflow;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import ibis.cohort.ActivityContext;
 import ibis.cohort.ActivityIdentifier;
 import ibis.cohort.Cohort;
 import ibis.cohort.CohortFactory;
-import ibis.cohort.Context;
 import ibis.cohort.Event;
 import ibis.cohort.FlexibleEventCollector;
 import ibis.cohort.MessageEvent;
 import ibis.cohort.MultiEventCollector;
-import ibis.cohort.context.OrContext;
-import ibis.cohort.context.UnitContext;
+import ibis.cohort.context.OrActivityContext;
+import ibis.cohort.context.UnitActivityContext;
+import ibis.cohort.context.UnitWorkerContext;
 
 public class Main {
 
@@ -30,26 +31,26 @@ public class Main {
         
         public final String problem;
         public final long size;
-        public final ArrayList<UnitContext> context = new ArrayList<UnitContext>();
+        public final ArrayList<UnitActivityContext> context = new ArrayList<UnitActivityContext>();
         
-        public Job(String problem, long size, UnitContext context) { 
+        public Job(String problem, long size, UnitActivityContext context) { 
             this.problem = problem;
             this.size = size;
             this.context.add(context);
         }
         
-        public void addContext(UnitContext c) {
+        public void addContext(UnitActivityContext c) {
             this.context.add(c); 
         }
 
-        public Context getContext() {
+        public ActivityContext getContext() {
             
             if (context.size() == 1) { 
                 return context.get(0);
             }
             
-            return new OrContext(context.toArray(
-                    new UnitContext[context.size()]), null);
+            return new OrActivityContext(context.toArray(
+                    new UnitActivityContext[context.size()]));
         }
     }
     
@@ -122,8 +123,6 @@ public class Main {
     
     private static void processList(ProblemList l) { 
         
-        UnitContext c = new UnitContext(l.cluster);
-        
         for (int i=0;i<l.problems.length;i++) {
             
             String problem = l.problems[i];
@@ -132,10 +131,10 @@ public class Main {
             Job tmp = jobs.get(problem);
             
             if (tmp == null) { 
-                tmp = new Job(problem, size, c);
+                tmp = new Job(problem, size, new UnitActivityContext(l.cluster, size));
                 jobs.put(problem, tmp);
             } else { 
-                tmp.addContext(c);
+                tmp.addContext(new UnitActivityContext(l.cluster, size));
             }
         }
     }
@@ -161,7 +160,7 @@ public class Main {
                 
                 // First send a 'list' job to all clusters
                 MultiEventCollector c = new MultiEventCollector(
-                        new UnitContext("master"), clusters.length);
+                        new UnitActivityContext("master"), clusters.length);
                 ActivityIdentifier id = cohort.submit(c);
                 
                 for (String cluster : clusters) { 
@@ -179,7 +178,7 @@ public class Main {
                 }
     
                 FlexibleEventCollector f = new FlexibleEventCollector(
-                        new UnitContext("master"));
+                        new UnitActivityContext("master"));
                 id = cohort.submit(f);
       
                 int count = jobs.size();
@@ -196,7 +195,7 @@ public class Main {
                 // Submit a job for every image pair
                 for (Job job : jobs.values()) { 
                     cohort.submit(new LaunchJob(id, job.getContext(), 
-                            (int) (size-job.size), job.problem, 8));
+                    		job.problem, 8));
                 }
                 
                 while (count > 0) { 

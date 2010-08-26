@@ -36,6 +36,7 @@
 		destdir="${builddir}"
                 srcdir="${srcdir}"
                 debug="true"
+                includeantruntime="false"
                 includes="datachallenge/**/*.java"/>
     </target>
 

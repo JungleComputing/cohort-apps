@@ -1,8 +1,8 @@
 package datachallenge.simple;
 
-import ibis.cohort.Context;
-import ibis.cohort.context.OrContext;
-import ibis.cohort.context.UnitContext;
+import ibis.cohort.ActivityContext;
+import ibis.cohort.context.OrActivityContext;
+import ibis.cohort.context.UnitActivityContext;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -21,10 +21,10 @@ public class Job implements Serializable {
 	
     public final long size;
     
-    public final ArrayList<UnitContext> context = new ArrayList<UnitContext>();
+    public final ArrayList<UnitActivityContext> context = new ArrayList<UnitActivityContext>();
     public final ArrayList<String> servers = new ArrayList<String>();
     
-    public Job(Problem problem, String server, UnitContext context) { 
+    public Job(Problem problem, String server, UnitActivityContext context) { 
         
     	this.ID = problem.name;
         
@@ -43,7 +43,7 @@ public class Job implements Serializable {
         }
     }
     
-    public void addContext(UnitContext c) {
+    public void addContext(UnitActivityContext c) {
         this.context.add(c); 
     }
 
@@ -55,14 +55,12 @@ public class Job implements Serializable {
     	}
     }
     
-    public Context getContext() {
+    public ActivityContext getContext() {
         
         if (context.size() == 1) { 
             return context.get(0);
         }
         
-        return new OrContext(
-                context.toArray(new UnitContext[context.size()]), 
-                null);
+        return new OrActivityContext(context.toArray(new UnitActivityContext[context.size()]));
     }
 }

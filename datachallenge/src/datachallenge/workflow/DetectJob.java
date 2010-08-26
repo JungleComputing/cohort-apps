@@ -1,7 +1,7 @@
 package datachallenge.workflow;
 
+import ibis.cohort.ActivityContext;
 import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Context;
 import ibis.cohort.SimpleActivity;
 
 public class DetectJob extends SimpleActivity {
@@ -14,7 +14,7 @@ public class DetectJob extends SimpleActivity {
     private final String tmpDir;
     private final int threshold;
     
-    public DetectJob(ActivityIdentifier parent, Context c, String tmpDir, 
+    public DetectJob(ActivityIdentifier parent, ActivityContext c, String tmpDir, 
             String file, int threshold) {
         
         super(parent, c, true);

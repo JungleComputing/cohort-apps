@@ -1,8 +1,8 @@
 package datachallenge.workflow;
 
 import ibis.cohort.Activity;
+import ibis.cohort.ActivityContext;
 import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Context;
 import ibis.cohort.Event;
 import ibis.cohort.MessageEvent;
 
@@ -40,7 +40,7 @@ public class CompareJob extends Activity {
     private String after;
     private String tmpDir;
     
-    public CompareJob(ActivityIdentifier parent, Context c, String input, 
+    public CompareJob(ActivityIdentifier parent, ActivityContext c, String input, 
             int split) {
         super(c, true);
         this.parent = parent;

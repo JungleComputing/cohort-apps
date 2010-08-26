@@ -1,9 +1,7 @@
 package datachallenge.simple;
 
 import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Context;
 import ibis.cohort.SimpleActivity;
-import ibis.cohort.context.UnitContext;
 
 public class LaunchJob extends SimpleActivity {
 
@@ -11,8 +9,8 @@ public class LaunchJob extends SimpleActivity {
 
     private final Job job;
     
-    public LaunchJob(ActivityIdentifier parent, Context c, int rank, Job job) {        
-        super(parent, c, rank, false);
+    public LaunchJob(ActivityIdentifier parent, Job job) {        
+        super(parent, job.getContext(), false);
         this.job = job;
     }
 
@@ -22,9 +20,7 @@ public class LaunchJob extends SimpleActivity {
         // The only goal of this job is to launch a new job on whatever location 
         // we end up on. This new job is given a restricted context, such that 
         // it cannot move to another machine.
-        
-        Context c = new UnitContext(LocalConfig.cluster());
-        cohort.submit(new CompareJob(parent, c, getRank(), job));
+        cohort.submit(new CompareJob(parent, job));
     }
 
 }

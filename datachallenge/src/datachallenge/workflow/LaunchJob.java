@@ -1,9 +1,8 @@
 package datachallenge.workflow;
 
+import ibis.cohort.ActivityContext;
 import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Context;
 import ibis.cohort.SimpleActivity;
-import ibis.cohort.context.UnitContext;
 
 public class LaunchJob extends SimpleActivity {
 
@@ -12,10 +11,10 @@ public class LaunchJob extends SimpleActivity {
     private final String input;
     private final int split;
     
-    public LaunchJob(ActivityIdentifier parent, Context c, int rank, 
+    public LaunchJob(ActivityIdentifier parent, ActivityContext c, 
             String input, int split) {
         
-        super(parent, c, rank, false);
+        super(parent, c, false);
          
         this.input = input;
         this.split = split;
@@ -27,9 +26,7 @@ public class LaunchJob extends SimpleActivity {
         // The only goal of this job is to launch a new job on whatever location 
         // we end up on. This new job is given a restricted context, such that 
         // it cannot move to another machine.
-        
-        Context c = new UnitContext(LocalConfig.cluster());
-        cohort.submit(new CompareJob(parent, c, input, split));
+    	cohort.submit(new CompareJob(parent, getContext(), input, split));
     }
 
 }

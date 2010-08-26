@@ -1,7 +1,7 @@
 package datachallenge.workflow;
 
+import ibis.cohort.ActivityContext;
 import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Context;
 import ibis.cohort.SimpleActivity;
 
 public class SubJob extends SimpleActivity {
@@ -18,7 +18,7 @@ public class SubJob extends SimpleActivity {
     private final int rank;
     private final int size;
     
-    public SubJob(ActivityIdentifier parent, Context c, String tmpDir, 
+    public SubJob(ActivityIdentifier parent, ActivityContext c, String tmpDir, 
             String before, String after, int threshold, int rank, int size) {
         super(parent, c, true);
         this.tmpDir = tmpDir;

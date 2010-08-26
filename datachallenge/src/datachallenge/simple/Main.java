@@ -7,7 +7,7 @@ import ibis.cohort.Event;
 import ibis.cohort.FlexibleEventCollector;
 import ibis.cohort.MessageEvent;
 import ibis.cohort.MultiEventCollector;
-import ibis.cohort.context.UnitContext;
+import ibis.cohort.context.UnitActivityContext;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,7 +19,7 @@ public class Main {
 	private static void processList(ProblemList l, int contextType) { 
 
 		if (contextType == LocalConfig.NO_CONTEXT) {
-			UnitContext c = new UnitContext("none");
+			UnitActivityContext c = new UnitActivityContext("none");
 
 			for (Problem p : l.problems) {
 
@@ -34,17 +34,15 @@ public class Main {
 			}
 
 		} else if (contextType == LocalConfig.LOCATION_CONTEXT) {
-			UnitContext c = new UnitContext(l.cluster);
-
 			for (Problem p : l.problems) {
 
 				Job tmp = jobs.get(p.name);
 
 				if (tmp == null) { 
-					tmp = new Job(p, l.server, c);
+					tmp = new Job(p, l.server, new UnitActivityContext(l.cluster, tmp.size));
 					jobs.put(p.name, tmp);
 				} else { 
-					tmp.addContext(c);
+					tmp.addContext(new UnitActivityContext(l.cluster, tmp.size));
 					tmp.addServer(l.server);
 				}
 			}
@@ -57,7 +55,7 @@ public class Main {
 
 				if (tmp == null) {
 					
-					UnitContext c = getSizeContext(tmp.size);
+					UnitActivityContext c = getSizeContext(tmp.size);
 					
 					if (c == null) { 
 						System.err.println("Job " + tmp.ID + " has unknown size! " + tmp.size + " SKIPPING!");
@@ -72,13 +70,13 @@ public class Main {
 		}
 	}
 
-	private static UnitContext getSizeContext(long size) { 
+	private static UnitActivityContext getSizeContext(long size) { 
 		
 		LocalConfig.Size [] sizes = LocalConfig.getSizes();
 
 		for (LocalConfig.Size s : sizes) { 
 			if (size >= s.from && size <= s.to) { 
-				return new UnitContext(s.name);
+				return new UnitActivityContext(s.name, size);
 			}
 		}
 		
@@ -107,7 +105,7 @@ public class Main {
 
 				// First send a 'list' job to all clusters
 				MultiEventCollector c = new MultiEventCollector(
-						new UnitContext("master"), clusters.length);
+						new UnitActivityContext("master"), clusters.length);
 
 				ActivityIdentifier id = cohort.submit(c);
 
@@ -123,24 +121,15 @@ public class Main {
 				}
 
 				FlexibleEventCollector f = new FlexibleEventCollector(
-						new UnitContext("master"));
+						new UnitActivityContext("master"));
 
 				id = cohort.submit(f);
 
 				int count = jobs.size();
 
-				// Find the biggest job in the set
-				long size = 0;
-
-				for (Job job : jobs.values()) { 
-					if (job.size > size) { 
-						size = job.size;
-					}
-				}
-
 				// Submit a job for every image pair
 				for (Job job : jobs.values()) {
-					cohort.submit(new CompareJob(id, job.getContext(), (int) (size-job.size), job));
+					cohort.submit(new CompareJob(id, job));
 					//cohort.submit(new LaunchJob(id, job.getContext(), 
 					//        (int) (size-job.size), job));
 				}

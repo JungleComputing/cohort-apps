@@ -1,7 +1,6 @@
 package datachallenge.simple;
 
 import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Context;
 import ibis.cohort.SimpleActivity;
 
 public class CompareJob extends SimpleActivity {
@@ -10,8 +9,8 @@ public class CompareJob extends SimpleActivity {
     
     private final Job job;
     
-    public CompareJob(ActivityIdentifier parent, Context c, int rank, Job job) {
-        super(parent, c, rank, true);
+    public CompareJob(ActivityIdentifier parent, Job job) {
+        super(parent, job.getContext(), true);
         this.job = job;
     }
 

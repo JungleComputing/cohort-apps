@@ -15,68 +15,55 @@ import java.util.HashMap;
 public class Main {
 
 	private static HashMap<String, Job> jobs = new HashMap<String, Job>();
-
+		
+	private static UnitActivityContext getContext(Problem p, String cluster, int contextType) { 
+	
+		long size = p.beforeFileSize + p.afterFileSize;
+		
+		switch (contextType) { 
+		case LocalConfig.DEFAULT_CONTEXT:
+			return UnitActivityContext.DEFAULT;
+		case LocalConfig.DEFAULT_CONTEXT_SORTED:
+			return new UnitActivityContext("DEFAULT", size);
+		case LocalConfig.LOCATION_CONTEXT:
+			return new UnitActivityContext(cluster);
+		case LocalConfig.LOCATION_CONTEXT_SORTED:
+			return new UnitActivityContext(cluster, size);
+		case LocalConfig.SIZE_CONTEXT:
+			return new UnitActivityContext(getSizeTag(size));
+		case LocalConfig.SIZE_CONTEXT_SORTED:
+			return new UnitActivityContext(getSizeTag(size), size);
+		default:
+			System.out.println("WARNING: Unknown context type " + contextType);
+			return UnitActivityContext.DEFAULT;
+		}
+	}
+	
 	private static void processList(ProblemList l, int contextType) { 
 
-		if (contextType == LocalConfig.NO_CONTEXT) {
-			UnitActivityContext c = new UnitActivityContext("none");
+		for (Problem p : l.problems) {
 
-			for (Problem p : l.problems) {
-
-				Job tmp = jobs.get(p.name);
-
-				if (tmp == null) { 
-					tmp = new Job(p, l.server, c);
-					jobs.put(p.name, tmp);
-				} else { 
-					tmp.addServer(l.server);
-				}
-			}
-
-		} else if (contextType == LocalConfig.LOCATION_CONTEXT) {
-			for (Problem p : l.problems) {
-
-				Job tmp = jobs.get(p.name);
-
-				if (tmp == null) { 
-					tmp = new Job(p, l.server, new UnitActivityContext(l.cluster, tmp.size));
-					jobs.put(p.name, tmp);
-				} else { 
-					tmp.addContext(new UnitActivityContext(l.cluster, tmp.size));
-					tmp.addServer(l.server);
-				}
-			}
+			UnitActivityContext c = getContext(p, l.cluster, contextType);
 			
-		} else if (contextType == LocalConfig.SIZE_CONTEXT) {
-
-			for (Problem p : l.problems) {
-
-				Job tmp = jobs.get(p.name);
-
-				if (tmp == null) {
-					
-					UnitActivityContext c = getSizeContext(tmp.size);
-					
-					if (c == null) { 
-						System.err.println("Job " + tmp.ID + " has unknown size! " + tmp.size + " SKIPPING!");
-					} else { 
-						tmp = new Job(p, l.server, c);
-						jobs.put(p.name, tmp);
-					}
-				} else { 
-					tmp.addServer(l.server);
-				}
+			Job tmp = jobs.get(p.name);
+			
+			if (tmp == null) { 
+				tmp = new Job(p, l.server, c);
+				jobs.put(p.name, tmp);
+			} else { 
+				tmp.addContext(c);
+				tmp.addServer(l.server);
 			}
 		}
 	}
-
-	private static UnitActivityContext getSizeContext(long size) { 
+	
+	private static String getSizeTag(long size) { 
 		
 		LocalConfig.Size [] sizes = LocalConfig.getSizes();
 
 		for (LocalConfig.Size s : sizes) { 
 			if (size >= s.from && size <= s.to) { 
-				return new UnitActivityContext(s.name, size);
+				return s.name;
 			}
 		}
 		
@@ -100,7 +87,6 @@ public class Main {
 			if (LocalConfig.isMaster()){ 
 				// Wohoo! I'm in charge.
 
-				boolean sorted = LocalConfig.getSortedConfiguration();
 				int contextType = LocalConfig.getContextConfiguration();
 
 				// First send a 'list' job to all clusters

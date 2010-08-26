@@ -13,12 +13,14 @@ import java.util.StringTokenizer;
 
 public class LocalConfig {
 
-	public static final int NO_CONTEXT       = 0;
-	public static final int LOCATION_CONTEXT = 1;
-	public static final int SIZE_CONTEXT     = 2;
+	public static final int DEFAULT_CONTEXT         = 0;
+	public static final int DEFAULT_CONTEXT_SORTED  = 1;
+	public static final int LOCATION_CONTEXT        = 2;
+	public static final int LOCATION_CONTEXT_SORTED = 3;
+	public static final int SIZE_CONTEXT            = 4;
+	public static final int SIZE_CONTEXT_SORTED     = 5;
 	
 	private static int contextType;
-	private static boolean sorted;
 	
     private static final String DEFAULT_EXEC = "dach.sh";
     private static final String DEFAULT_TMP = "/tmp";
@@ -27,7 +29,6 @@ public class LocalConfig {
     private static String configuration;
     
     private static boolean configured = false;
-    
     private static boolean isMaster = false;
     
     private static boolean useHTTPFileServer = false;
@@ -168,27 +169,26 @@ public class LocalConfig {
 
         clusters = c.toArray(new String [c.size()]);
        
-        sorted = false;
-        contextType = LOCATION_CONTEXT;
+        contextType = DEFAULT_CONTEXT;
         
         if (configuration == null) {
-        	sorted = true;
-        	contextType = LOCATION_CONTEXT;
-        } else if (configuration.equals("random")) {
-        	sorted = false;
-        	contextType = NO_CONTEXT;
-        } else if (configuration.equals("sorted")) {
-        	sorted = true;
-        	contextType = NO_CONTEXT;
-        } else if (configuration.equals("location_and_sorted")) {
-        	sorted = true;
-        	contextType = LOCATION_CONTEXT;
+        	contextType = DEFAULT_CONTEXT;
+        } else if (configuration.equals("default")) {
+        	contextType = DEFAULT_CONTEXT;
+        } else if (configuration.equals("default_sorted")) {
+        	contextType = DEFAULT_CONTEXT_SORTED;
         } else if (configuration.equals("location")) {
-        	sorted = false;
         	contextType = LOCATION_CONTEXT;
+        } else if (configuration.equals("location_sorted")) {
+        	contextType = LOCATION_CONTEXT_SORTED;
         } else if (configuration.equals("size")) {
-        	sorted = false;
         	contextType = SIZE_CONTEXT;
+      
+        	if (sizes == null) { 
+        		throw new Exception("Selected size context without defining sizes!");
+        	}        	
+        } else if (configuration.equals("size_sorted")) {
+        	contextType = SIZE_CONTEXT_SORTED;
         	
         	if (sizes == null) { 
         		throw new Exception("Selected size context without defining sizes!");
@@ -253,10 +253,6 @@ public class LocalConfig {
 
     public static int getContextConfiguration() {
         return contextType;
-    }
-    
-    public static boolean getSortedConfiguration() {
-        return sorted;
     }
     
     public static Size [] getSizes() {

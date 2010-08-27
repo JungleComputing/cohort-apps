@@ -91,6 +91,8 @@ public class Main {
 
 				int contextType = LocalConfig.getContextConfiguration();
 
+				System.out.println("MASTER Using context config: " + contextType);
+				
 				// First send a 'list' job to all clusters
 				MultiEventCollector c = new MultiEventCollector(
 						new UnitActivityContext("master"), clusters.length);
@@ -117,7 +119,7 @@ public class Main {
 
 				// Submit a job for every image pair
 				for (Job job : jobs.values()) {
-					cohort.submit(new CompareJob(id, job));
+					cohort.submit(new LaunchJob(id, job));
 					//cohort.submit(new LaunchJob(id, job.getContext(), 
 					//        (int) (size-job.size), job));
 				}

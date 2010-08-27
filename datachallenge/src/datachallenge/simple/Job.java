@@ -44,6 +44,15 @@ public class Job implements Serializable {
     }
     
     public void addContext(UnitActivityContext c) {
+    	
+    	for (int i=0;i<context.size();i++) { 
+    		UnitActivityContext tmp = context.get(i);
+    	
+    		if (tmp.name.equals(c.name) && tmp.rank == c.rank) { 
+    			return;
+    		}
+    	}
+    	
         this.context.add(c); 
     }
 

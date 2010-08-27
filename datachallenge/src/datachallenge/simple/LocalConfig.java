@@ -77,9 +77,6 @@ public class LocalConfig {
     	
      	public void run() {
 
-	   		StringBuilder stdout = new StringBuilder();
-    		StringBuilder stderr = new StringBuilder();
-    		
     		String executable = execDir + File.separator + monitorExec;
 
     		while (!getDone()) { 
@@ -88,7 +85,10 @@ public class LocalConfig {
     			} catch (Exception e) {
 					// TODO: handle exception
 				}
-    			
+
+    	   		StringBuilder stdout = new StringBuilder();
+        		StringBuilder stderr = new StringBuilder();
+
         		int exit = LocalConfig.run(new String [] { executable }, stdout, stderr); 
 
         		if (exit != 0) {

@@ -81,7 +81,7 @@ public class Main {
 
 			long start = System.currentTimeMillis();
 			
-			LocalConfig.startMonitor(500);
+			LocalConfig.startMonitor(1000);
 
 			Cohort cohort = CohortFactory.createCohort();
 			cohort.activate();

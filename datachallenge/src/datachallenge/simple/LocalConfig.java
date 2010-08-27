@@ -21,7 +21,7 @@ public class LocalConfig {
 	
 	private static int contextType;
 	
-    private static final String DEFAULT_EXEC = "dach.sh";
+    private static final String DEFAULT_EXEC = "dach_NEW.sh";
     private static final String DEFAULT_TMP = "/tmp";
     private static final String DEFAULT_CONFIGURATION = "location_and_sorted";
     

@@ -14,150 +14,174 @@ import java.util.HashMap;
 
 public class Main {
 
-	private static HashMap<String, Job> jobs = new HashMap<String, Job>();
-		
-	private static UnitActivityContext getContext(Problem p, String cluster, int contextType) { 
-	
-		long size = p.beforeFileSize + p.afterFileSize;
-		
-		switch (contextType) { 
-		case LocalConfig.DEFAULT_CONTEXT:
-			return UnitActivityContext.DEFAULT;
-		case LocalConfig.DEFAULT_CONTEXT_SORTED:
-			return new UnitActivityContext("DEFAULT", size);
-		case LocalConfig.LOCATION_CONTEXT:
-			return new UnitActivityContext(cluster);
-		case LocalConfig.LOCATION_CONTEXT_SORTED:
-			return new UnitActivityContext(cluster, size);
-		case LocalConfig.SIZE_CONTEXT:
-			return new UnitActivityContext(getSizeTag(size));
-		case LocalConfig.SIZE_CONTEXT_SORTED:
-			return new UnitActivityContext(getSizeTag(size), size);
-		default:
-			System.out.println("WARNING: Unknown context type " + contextType);
-			return UnitActivityContext.DEFAULT;
-		}
-	}
-	
-	private static void processList(ProblemList l, int contextType) { 
+    private static HashMap<String, Job> jobs = new HashMap<String, Job>();
 
-		for (Problem p : l.problems) {
+    private static UnitActivityContext getContext(Problem p, String cluster,
+            int contextType) { 
 
-			UnitActivityContext c = getContext(p, l.cluster, contextType);
-			
-			Job tmp = jobs.get(p.name);
-			
-			if (tmp == null) { 
-				tmp = new Job(p, l.server, c);
-				jobs.put(p.name, tmp);
-			} else { 
-				tmp.addContext(c);
-				tmp.addServer(l.server);
-			}
-		}
-	}
-	
-	private static String getSizeTag(long size) { 
-		
-		LocalConfig.Size [] sizes = LocalConfig.getSizes();
+        long size = p.beforeFileSize + p.afterFileSize;
 
-		for (LocalConfig.Size s : sizes) { 
-			if (size >= s.from && size <= s.to) { 
-				return s.name;
-			}
-		}
-		
-		return null;
-	}
-	
-	public static void main(String [] args) {
+        switch (contextType) { 
+        case LocalConfig.DEFAULT_CONTEXT:
+            return UnitActivityContext.DEFAULT;
+        case LocalConfig.DEFAULT_CONTEXT_SORTED:
+            return new UnitActivityContext("DEFAULT", size);
+        case LocalConfig.LOCATION_CONTEXT:
+            return new UnitActivityContext(cluster);
+        case LocalConfig.LOCATION_CONTEXT_SORTED:
+            return new UnitActivityContext(cluster, size);
+        case LocalConfig.SIZE_CONTEXT:
+            return new UnitActivityContext(getSizeTag(size));
+        case LocalConfig.SIZE_CONTEXT_SORTED:
+            return new UnitActivityContext(getSizeTag(size), size);
+        default:
+            System.out.println("WARNING: Unknown context type " + contextType);
+        return UnitActivityContext.DEFAULT;
+        }
+    }
 
-		try { 
-			ArrayList<Result> res = new ArrayList<Result>();
+    private static void addFallBack(Job job, int contextType) { 
+        
+        long size = job.beforeFileSize + job.afterFileSize;
 
-			LocalConfig.configure(args);
+        switch (contextType) { 
+        case LocalConfig.LOCATION_CONTEXT:
+            job.addContext(UnitActivityContext.DEFAULT);
+            return;
+        case LocalConfig.LOCATION_CONTEXT_SORTED:
+            job.addContext(new UnitActivityContext("DEFAULT", size));
+            return;
+        default:
+            return;
+        }
+    }
 
-			String [] clusters = LocalConfig.getClusters();
+    
+    private static void processList(ProblemList l, int contextType) {
 
-			long start = System.currentTimeMillis();
-			
-			LocalConfig.startMonitor(1000);
+        for (Problem p : l.problems) {
 
-			Cohort cohort = CohortFactory.createCohort();
-			cohort.activate();
+            UnitActivityContext c = getContext(p, l.cluster, contextType); 
 
-			if (LocalConfig.isMaster()){ 
-				// Wohoo! I'm in charge.
+            Job tmp = jobs.get(p.name);
 
-				int contextType = LocalConfig.getContextConfiguration();
+            if (tmp == null) { 
+                tmp = new Job(p, l.server, c);
+                jobs.put(p.name, tmp);
+            } else { 
+                tmp.addContext(c);
+                tmp.addServer(l.server);
+            }
+        }
+    }
 
-				System.out.println("MASTER Using context config: " + contextType);
-				
-				// First send a 'list' job to all clusters
-				MultiEventCollector c = new MultiEventCollector(
-						new UnitActivityContext("master"), clusters.length);
+    private static String getSizeTag(long size) { 
 
-				ActivityIdentifier id = cohort.submit(c);
+        LocalConfig.Size [] sizes = LocalConfig.getSizes();
 
-				for (String cluster : clusters) { 
-					cohort.submit(new ListJob(id, cluster));
-				}
+        for (LocalConfig.Size s : sizes) { 
+            if (size >= s.from && size <= s.to) { 
+                return s.name;
+            }
+        }
 
-				// Wait for the results and merge them into a single set 
-				Event [] results = c.waitForEvents();
+        return null;
+    }
 
-				for (Event e : results) { 
-					processList((ProblemList) ((MessageEvent) e).message, contextType);
-				}
+    public static void main(String [] args) {
 
-				FlexibleEventCollector f = new FlexibleEventCollector(
-						new UnitActivityContext("master"));
+        try { 
+            ArrayList<Result> res = new ArrayList<Result>();
 
-				id = cohort.submit(f);
+            LocalConfig.configure(args);
 
-				int count = jobs.size();
+            String [] clusters = LocalConfig.getClusters();
 
-				// Submit a job for every image pair
-				for (Job job : jobs.values()) {
-					cohort.submit(new LaunchJob(id, job));
-					//cohort.submit(new LaunchJob(id, job.getContext(), 
-					//        (int) (size-job.size), job));
-				}
+            long start = System.currentTimeMillis();
+
+            LocalConfig.startMonitor(1000);
+
+            Cohort cohort = CohortFactory.createCohort();
+            cohort.activate();
+
+            if (LocalConfig.isMaster()){ 
+                // Wohoo! I'm in charge.
+
+                int contextType = LocalConfig.getContextConfiguration();
+
+                System.out.println("MASTER Using context config: " + contextType);
+
+                // First send a 'list' job to all clusters
+                MultiEventCollector c = new MultiEventCollector(
+                        new UnitActivityContext("master"), clusters.length);
+
+                ActivityIdentifier id = cohort.submit(c);
+
+                for (String cluster : clusters) { 
+                    cohort.submit(new ListJob(id, cluster));
+                }
+
+                // Wait for the results and merge them into a single set 
+                Event [] results = c.waitForEvents();
+
+                for (Event e : results) { 
+                    processList((ProblemList) ((MessageEvent) e).message, 
+                            contextType);
+                }
+
+                FlexibleEventCollector f = new FlexibleEventCollector(
+                        new UnitActivityContext("master"));
+
+                id = cohort.submit(f);
+
+                int count = jobs.size();
+
+                boolean fallback = LocalConfig.allowFallback();
+                
+                // Submit a job for every image pair
+                for (Job job : jobs.values()) {
+                    
+                    if (fallback) { 
+                        addFallBack(job, contextType);
+                    }
+                    
+                    cohort.submit(new LaunchJob(id, job));
+                }
 
 
-				while (count > 0) { 
+                while (count > 0) { 
 
-					long t = System.currentTimeMillis();
+                    long t = System.currentTimeMillis();
 
-					System.out.println((t-start) + " Master waiting for " + count + " results");
+                    System.out.println((t-start) + " Master waiting for " + count + " results");
 
-					Event [] tmp = f.waitForEvents();
+                    Event [] tmp = f.waitForEvents();
 
-					t = System.currentTimeMillis();
+                    t = System.currentTimeMillis();
 
-					System.out.println((t-start) + " Master received " + tmp.length + " results");
+                    System.out.println((t-start) + " Master received " + tmp.length + " results");
 
-					for (Event e : tmp) { 
-						res.add((Result) ((MessageEvent) e).message);
-					}
+                    for (Event e : tmp) { 
+                        res.add((Result) ((MessageEvent) e).message);
+                    }
 
-					count -= tmp.length;
-				}
+                    count -= tmp.length;
+                }
 
-				long t = System.currentTimeMillis();
+                long t = System.currentTimeMillis();
 
-				System.out.println((t-start) + " Master DONE");
+                System.out.println((t-start) + " Master DONE");
 
-			}
+            }
 
-			cohort.done();
+            cohort.done();
 
-			for (Result r : res) { 
-				System.out.println(r);
-			}
+            for (Result r : res) { 
+                System.out.println(r);
+            }
 
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

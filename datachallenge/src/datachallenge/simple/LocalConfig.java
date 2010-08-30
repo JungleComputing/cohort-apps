@@ -38,6 +38,8 @@ public class LocalConfig {
 
     private static String monitorExec = "monitor.sh";
 
+    private static String rate = null;
+    
     /*
     private static boolean useFileServer = false;
     private static FileClient fileClient;
@@ -175,6 +177,8 @@ public class LocalConfig {
                 cluster = args[++i];
             } else if (tmp.equalsIgnoreCase("-configuration")) { 
                 configuration = args[++i];
+            } else if (tmp.equalsIgnoreCase("-rate")) { 
+                rate = args[++i];
             } else if (tmp.equalsIgnoreCase("-master")) { 
                 isMaster = true;
             } else if (tmp.equalsIgnoreCase("-fallback")) { 
@@ -594,13 +598,19 @@ public class LocalConfig {
 
         String uri = server + "/" + remoteFile;
 
-        System.out.println("Copying remote file " + uri + " to local file "  + localFile);
-
         StringBuilder stdout = new StringBuilder();
         StringBuilder stderr = new StringBuilder();
 
-        int exit = run(new String [] { httpCpExec, uri, "-O", localFile }, stdout, stderr); 
-
+        int exit = 0;
+        
+        if (rate != null && !server.equals(httpServer)) {
+        	System.out.println("Copying remote file " + uri + " to local file "  + localFile + " rate limit " + rate);
+        	exit = run(new String [] { httpCpExec, uri, "--limit-rate="+ rate, "-O", localFile }, stdout, stderr); 
+        } else { 
+        	System.out.println("Copying remote file " + uri + " to local file "  + localFile);
+        	exit = run(new String [] { httpCpExec, uri, "-O", localFile }, stdout, stderr); 
+        }
+        
         if (exit != 0) {
             System.out.println("Failed to remotely copy file " +  uri
                     + " (stdout: " + stdout + ") (stderr: " + stderr + ")\n");
@@ -609,8 +619,7 @@ public class LocalConfig {
 
         long end = System.currentTimeMillis();
 
-        System.out.println("Remote copying " +  uri
-                + " took " + (end-start) + " ms.");
+        System.out.println("Remote copying " +  uri + " took " + (end-start) + " ms.");
 
         return true;            
     }

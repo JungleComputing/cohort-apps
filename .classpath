@@ -12,6 +12,6 @@
 	<classpathentry kind="lib" path="external/ibis-util-2.2.jar"/>
 	<classpathentry kind="lib" path="genesequencing/external/neobio.jar"/>
 	<classpathentry kind="lib" path="external/smartsockets-1.51.jar"/>
-	<classpathentry kind="lib" path="external/cohort-0.5.0.jar"/>
+	<classpathentry kind="lib" path="external/cohort-0.6.0.jar"/>
 	<classpathentry kind="output" path="build-eclipse"/>
 </classpath>

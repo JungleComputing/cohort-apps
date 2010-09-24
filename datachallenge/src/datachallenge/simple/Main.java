@@ -4,10 +4,16 @@ import ibis.cohort.ActivityIdentifier;
 import ibis.cohort.Cohort;
 import ibis.cohort.CohortFactory;
 import ibis.cohort.Event;
+import ibis.cohort.Executor;
 import ibis.cohort.FlexibleEventCollector;
 import ibis.cohort.MessageEvent;
 import ibis.cohort.MultiEventCollector;
+import ibis.cohort.SimpleExecutor;
+import ibis.cohort.StealPool;
+import ibis.cohort.WorkerContext;
+import ibis.cohort.context.OrWorkerContext;
 import ibis.cohort.context.UnitActivityContext;
+import ibis.cohort.context.UnitWorkerContext;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,7 +45,45 @@ public class Main {
         return UnitActivityContext.DEFAULT;
         }
     }
+    
+    private static WorkerContext getWorkerContext(String cluster, 
+    		int contextType, String executorSize, boolean fallback) { 
 
+    	switch (contextType) { 
+        case LocalConfig.DEFAULT_CONTEXT:
+            return UnitWorkerContext.DEFAULT;
+        case LocalConfig.DEFAULT_CONTEXT_SORTED:
+            return new UnitWorkerContext("DEFAULT", UnitWorkerContext.BIGGEST);
+        case LocalConfig.LOCATION_CONTEXT:
+        	
+        	if (!fallback) { 
+        		return new UnitWorkerContext(cluster);
+        	} else { 
+        		return new OrWorkerContext(new UnitWorkerContext [] 
+        					{ new UnitWorkerContext(cluster), new UnitWorkerContext("DEFAULT") },
+        					true); 
+        	}	
+        case LocalConfig.LOCATION_CONTEXT_SORTED:
+        
+        	if (!fallback) { 
+        		return new UnitWorkerContext(cluster, UnitWorkerContext.BIGGEST);
+        	} else { 
+        		return new OrWorkerContext(new UnitWorkerContext [] 
+        					{ new UnitWorkerContext(cluster, UnitWorkerContext.BIGGEST), 
+        				      new UnitWorkerContext("DEFAULT", UnitWorkerContext.BIGGEST) 
+        					}, true); 
+        	}
+       
+        case LocalConfig.SIZE_CONTEXT:
+            return new UnitWorkerContext(executorSize);
+        case LocalConfig.SIZE_CONTEXT_SORTED:
+            return new UnitWorkerContext(executorSize, UnitWorkerContext.BIGGEST);
+        default:
+            System.out.println("WARNING: Unknown context type " + contextType);
+            return UnitWorkerContext.DEFAULT;
+        }
+    }
+    
     private static void addFallBack(Job job, int contextType) { 
         
         long size = job.beforeFileSize + job.afterFileSize;
@@ -101,7 +145,35 @@ public class Main {
 
             LocalConfig.startMonitor(1000);
 
-            Cohort cohort = CohortFactory.createCohort();
+            StealPool master = new StealPool("master");
+            
+            int exec = LocalConfig.getExecutorCount();
+            
+            Executor [] e = null;
+            
+            if (LocalConfig.isMaster()) { 
+            	e = new Executor[exec+1];
+            } else { 
+            	e = new Executor[exec];
+            }  
+            
+            WorkerContext wc = getWorkerContext(
+            		LocalConfig.cluster(), 
+            		LocalConfig.getContextConfiguration(), 
+            		LocalConfig.getExecutorType(), 
+            		LocalConfig.allowFallback());
+            
+            for (int i=0;i<exec;i++) { 
+            	e[i] = new SimpleExecutor(StealPool.NONE, master, wc);
+            }
+            
+            if (LocalConfig.isMaster()) { 
+            	e[exec] = new SimpleExecutor(
+            			master, StealPool.NONE, 
+            			new UnitWorkerContext("master"));            	            	
+            } 
+            
+            Cohort cohort = CohortFactory.createCohort(e);
             cohort.activate();
 
             if (LocalConfig.isMaster()){ 
@@ -124,8 +196,8 @@ public class Main {
                 // Wait for the results and merge them into a single set 
                 Event [] results = c.waitForEvents();
 
-                for (Event e : results) { 
-                    processList((ProblemList) ((MessageEvent) e).message, 
+                for (Event m : results) { 
+                    processList((ProblemList) ((MessageEvent) m).message, 
                             contextType);
                 }
 
@@ -161,8 +233,8 @@ public class Main {
 
                     System.out.println((t-start) + " Master received " + tmp.length + " results");
 
-                    for (Event e : tmp) { 
-                        res.add((Result) ((MessageEvent) e).message);
+                    for (Event m : tmp) { 
+                        res.add((Result) ((MessageEvent) m).message);
                     }
 
                     count -= tmp.length;

@@ -37,7 +37,7 @@
                 srcdir="${srcdir}"
                 debug="true"
                 includeantruntime="false"
-                includes="datachallenge/**/*.java"/>
+                includes="datachallenge/simple/*.java,datachallenge/util/*.java"/>
     </target>
 
 <!--

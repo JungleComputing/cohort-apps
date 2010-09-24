@@ -16,6 +16,6 @@ public class CompareJob extends SimpleActivity {
 
     @Override
     public void simpleActivity() throws Exception {
-        cohort.send(identifier(), parent, LocalConfig.compare(job));
+        executor.send(identifier(), parent, LocalConfig.compare(job));
     }
 }

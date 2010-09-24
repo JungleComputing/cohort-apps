@@ -40,6 +40,10 @@ public class LocalConfig {
 
     private static String rate = null;
     
+    private static int executorCount = 1; 
+    private static int executorSize = 1; 
+    private static String executorType = "none"; 
+    
     /*
     private static boolean useFileServer = false;
     private static FileClient fileClient;
@@ -177,6 +181,12 @@ public class LocalConfig {
                 cluster = args[++i];
             } else if (tmp.equalsIgnoreCase("-configuration")) { 
                 configuration = args[++i];
+            } else if (tmp.equalsIgnoreCase("-executorCount")) { 
+                executorCount = Integer.parseInt(args[++i]);
+            } else if (tmp.equalsIgnoreCase("-executorSize")) { 
+                executorSize = Integer.parseInt(args[++i]);                        
+            } else if (tmp.equalsIgnoreCase("-executorType")) { 
+                executorType = args[++i];                        
             } else if (tmp.equalsIgnoreCase("-rate")) { 
                 rate = args[++i];
             } else if (tmp.equalsIgnoreCase("-master")) { 
@@ -334,6 +344,19 @@ public class LocalConfig {
         return contextType;
     }
 
+    public static int getExecutorCount() {
+		return executorCount;
+	}
+
+    public static int getExecutorSize() {
+		return executorSize;
+	}
+    
+    public static String getExecutorType() {
+		return executorType;
+	}
+    
+    
     public static Size [] getSizes() {
         if (sizes == null) { 
             return new Size[0];
@@ -824,5 +847,6 @@ public class LocalConfig {
         return new Result(job.ID, cluster, copy-start, end-copy, out);
     }
 
+	
 
 }

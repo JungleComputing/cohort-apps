@@ -149,29 +149,26 @@ public class Main {
             
             int exec = LocalConfig.getExecutorCount();
             
-            Executor [] e = null;
-            
-            if (LocalConfig.isMaster()) { 
-            	e = new Executor[exec+1];
-            } else { 
-            	e = new Executor[exec];
-            }  
+            Executor [] e = new Executor[exec];
             
             WorkerContext wc = getWorkerContext(
-            		LocalConfig.cluster(), 
+                    LocalConfig.cluster(), 
             		LocalConfig.getContextConfiguration(), 
             		LocalConfig.getExecutorType(), 
             		LocalConfig.allowFallback());
             
-            for (int i=0;i<exec;i++) { 
-            	e[i] = new SimpleExecutor(StealPool.NONE, master, wc);
+            if (LocalConfig.isMaster()) {
+            	// The master sacrifes 1 executor
+            	for (int i=0;i<exec-1;i++) { 
+            		e[i] = new SimpleExecutor(StealPool.NONE, master, wc);
+            	}
+            	e[exec-1] = new SimpleExecutor(master, StealPool.NONE, 
+            				new UnitWorkerContext("master"));
+            } else { 
+            	for (int i=0;i<exec;i++) { 
+            		e[i] = new SimpleExecutor(StealPool.NONE, master, wc);
+            	}
             }
-            
-            if (LocalConfig.isMaster()) { 
-            	e[exec] = new SimpleExecutor(
-            			master, StealPool.NONE, 
-            			new UnitWorkerContext("master"));            	            	
-            } 
             
             Cohort cohort = CohortFactory.createCohort(e);
             cohort.activate();

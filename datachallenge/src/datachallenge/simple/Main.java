@@ -51,9 +51,13 @@ public class Main {
 
     	switch (contextType) { 
         case LocalConfig.DEFAULT_CONTEXT:
-            return UnitWorkerContext.DEFAULT;
+        	// NOTE, we need the cluster to get the initial 'list' job to run.  
+        	return new OrWorkerContext(new UnitWorkerContext [] { new UnitWorkerContext("DEFAULT"), new UnitWorkerContext(cluster) }, true); 
+        
         case LocalConfig.DEFAULT_CONTEXT_SORTED:
-            return new UnitWorkerContext("DEFAULT", UnitWorkerContext.BIGGEST);
+        	// NOTE, we need the cluster to get the initial 'list' job to run.  
+        	return new OrWorkerContext(new UnitWorkerContext [] { new UnitWorkerContext("DEFAULT", UnitWorkerContext.BIGGEST), new UnitWorkerContext(cluster) }, true); 
+                    
         case LocalConfig.LOCATION_CONTEXT:
         	
         	if (!fallback) { 
@@ -75,9 +79,44 @@ public class Main {
         	}
        
         case LocalConfig.SIZE_CONTEXT:
-            return new UnitWorkerContext(executorSize);
+        	// NOTE, we need the cluster to get the initial 'list' job to run.  
+        	return new OrWorkerContext(new UnitWorkerContext [] { new UnitWorkerContext(executorSize), new UnitWorkerContext(cluster) }, true); 
+        
         case LocalConfig.SIZE_CONTEXT_SORTED:
-            return new UnitWorkerContext(executorSize, UnitWorkerContext.BIGGEST);
+        
+        	// HACK!
+        	if (executorSize.equals("XXLARGE")) { 
+        		return new OrWorkerContext(new UnitWorkerContext [] { 
+        				new UnitWorkerContext("XXLARGE", UnitWorkerContext.BIGGEST), 
+        				new UnitWorkerContext("LARGE", UnitWorkerContext.BIGGEST), 
+        				new UnitWorkerContext("MEDIUM", UnitWorkerContext.BIGGEST), 
+        				new UnitWorkerContext("SMALL", UnitWorkerContext.BIGGEST), 
+        				new UnitWorkerContext(cluster) }, true); 
+            	
+        	} else if (executorSize.equals("LARGE")) { 
+        		return new OrWorkerContext(new UnitWorkerContext [] { 
+        				new UnitWorkerContext("LARGE", UnitWorkerContext.BIGGEST), 
+        				new UnitWorkerContext("MEDIUM", UnitWorkerContext.BIGGEST), 
+        				new UnitWorkerContext("SMALL", UnitWorkerContext.BIGGEST), 
+        				new UnitWorkerContext(cluster) }, true); 
+            	
+        	} else if (executorSize.equals("MEDIUM")) { 
+
+        		return new OrWorkerContext(new UnitWorkerContext [] {
+        				new UnitWorkerContext("MEDIUM", UnitWorkerContext.BIGGEST), 
+        				new UnitWorkerContext("SMALL", UnitWorkerContext.BIGGEST), 
+        				new UnitWorkerContext(cluster) }, true); 
+
+        	} else if (executorSize.equals("SMALL")) { 
+        		return new OrWorkerContext(new UnitWorkerContext [] {
+        				new UnitWorkerContext("SMALL", UnitWorkerContext.BIGGEST), 
+        				new UnitWorkerContext(cluster) }, true); 
+
+    		}
+
+        	// NOTE, we need the cluster to get the initial 'list' job to run.  
+        	return new OrWorkerContext(new UnitWorkerContext [] { new UnitWorkerContext(executorSize, UnitWorkerContext.BIGGEST), new UnitWorkerContext(cluster) }, true); 
+        
         default:
             System.out.println("WARNING: Unknown context type " + contextType);
             return UnitWorkerContext.DEFAULT;
@@ -245,6 +284,8 @@ public class Main {
 
             cohort.done();
 
+            LocalConfig.stopMonitor();
+            
             for (Result r : res) { 
                 System.out.println(r);
             }

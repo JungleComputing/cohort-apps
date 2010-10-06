@@ -30,6 +30,6 @@ public class DetectJob extends SimpleActivity {
         ScriptResult result = LocalConfig.runScript(new String [] { 
                 LocalConfig.getScript(script), tmpDir, file, "" + threshold }); 
         
-        cohort.send(identifier(), parent, result);
+        executor.send(identifier(), parent, result);
     }
 }

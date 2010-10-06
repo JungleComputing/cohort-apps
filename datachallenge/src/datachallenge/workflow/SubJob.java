@@ -36,7 +36,7 @@ public class SubJob extends SimpleActivity {
                 LocalConfig.getScript(script), tmpDir, before, after, 
                 "" + threshold, "" + rank, "" + size });
         
-        cohort.send(identifier(), parent, result);         
+        executor.send(identifier(), parent, result);         
     }
 
 }

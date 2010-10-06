@@ -25,6 +25,8 @@ public class LocalConfig {
     private static final String DEFAULT_TMP = "/tmp";
     private static final String DEFAULT_CONFIGURATION = "location_and_sorted";
 
+    private static final String DEFAULT_CPEXEC = "get.sh";
+    
     private static String configuration;
 
     private static boolean configured = false;
@@ -36,6 +38,8 @@ public class LocalConfig {
     private static String problemList;
     private static String httpCpExec = "/usr/bin/wget";
 
+    private static String scriptCpExec = null;
+    
     private static String monitorExec = "monitor.sh";
 
     private static String rate = null;
@@ -144,7 +148,7 @@ public class LocalConfig {
 
     public synchronized static void startMonitor(int delay) { 
 
-        if (m!= null) { 
+        if (m != null) { 
             return;
         }
 
@@ -226,6 +230,10 @@ public class LocalConfig {
             }
         }
 
+        if (rate == null) { 
+        	rate = "100M";
+        }
+        
         if (dataDir == null) { 
             throw new Exception("Data directory not set!");
         }
@@ -252,6 +260,12 @@ public class LocalConfig {
             throw new Exception("Executable not found: " + executable);
         }
 
+        scriptCpExec = execDir + File.separator + DEFAULT_CPEXEC;
+        
+        if (!fileExists(scriptCpExec)) { 
+            throw new Exception("CP script not found: " + scriptCpExec);
+        }
+        
         clusters = c.toArray(new String [c.size()]);
 
         contextType = DEFAULT_CONTEXT;
@@ -266,6 +280,9 @@ public class LocalConfig {
             contextType = LOCATION_CONTEXT;
         } else if (configuration.equals("location_sorted")) {
             contextType = LOCATION_CONTEXT_SORTED;
+        } else if (configuration.equals("location_sorted_fallback")) {
+            contextType = LOCATION_CONTEXT_SORTED;
+            fallback = true;            
         } else if (configuration.equals("size")) {
             contextType = SIZE_CONTEXT;
 
@@ -617,6 +634,7 @@ public class LocalConfig {
 
     private static boolean remoteCopy(String server, String remoteFile, String localFile) { 
 
+/*    	
         long start = System.currentTimeMillis();
 
         String uri = server + "/" + remoteFile;
@@ -644,7 +662,31 @@ public class LocalConfig {
 
         System.out.println("Remote copying " +  uri + " took " + (end-start) + " ms.");
 
-        return true;            
+        return true;
+*/            
+
+    	long start = System.currentTimeMillis();
+
+        StringBuilder stdout = new StringBuilder();
+        StringBuilder stderr = new StringBuilder();
+
+        int exit = 0;
+        
+        System.out.println("Copying remote file " + server + "/" + remoteFile + " to local file "  + localFile + " rate limit " + rate);
+        
+        exit = run(new String [] { scriptCpExec, server, rate, remoteFile, localFile }, stdout, stderr); 
+        
+        if (exit != 0) {
+            System.out.println("Failed to remotely copy file " +  server + "/" + remoteFile 
+            		+ " (stdout: " + stdout + ") (stderr: " + stderr + ")\n");
+            return false;
+        }
+
+        long end = System.currentTimeMillis();
+
+        System.out.println("Remote copying " +  server + "/" + remoteFile + " took " + (end-start) + " ms.");
+
+        return true;
     }
 
     public static String cluster() { 
@@ -842,7 +884,7 @@ public class LocalConfig {
         System.out.println("Processing " + job.ID + " took " + (end-copy) + " ms.");
         System.out.println("Total time " + job.ID + " is " + (end-start) + " ms.");
 
-        System.out.println("Output on stderr:\n " + err);
+      //  System.out.println("Output on stderr:\n " + err);
 
         return new Result(job.ID, cluster, copy-start, end-copy, out);
     }

@@ -26,7 +26,7 @@ public class LaunchJob extends SimpleActivity {
         // The only goal of this job is to launch a new job on whatever location 
         // we end up on. This new job is given a restricted context, such that 
         // it cannot move to another machine.
-    	cohort.submit(new CompareJob(parent, getContext(), input, split));
+    	executor.submit(new CompareJob(parent, getContext(), input, split));
     }
 
 }

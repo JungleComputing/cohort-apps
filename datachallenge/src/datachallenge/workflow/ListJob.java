@@ -14,6 +14,6 @@ public class ListJob extends SimpleActivity {
 
     @Override
     public void simpleActivity() throws Exception {
-        cohort.send(identifier(), parent, LocalConfig.listProblems());
+        executor.send(identifier(), parent, LocalConfig.listProblems());
     }
 }

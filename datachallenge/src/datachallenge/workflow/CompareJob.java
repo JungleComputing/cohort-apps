@@ -74,8 +74,8 @@ public class CompareJob extends Activity {
         
         state = DETECT;
         
-        cohort.submit(new DetectJob(identifier(), getContext(), tmpDir, before, 1000));
-        cohort.submit(new DetectJob(identifier(), getContext(), tmpDir, after, 1000));
+        executor.submit(new DetectJob(identifier(), getContext(), tmpDir, before, 1000));
+        executor.submit(new DetectJob(identifier(), getContext(), tmpDir, after, 1000));
         
         suspend();
     }
@@ -114,7 +114,7 @@ public class CompareJob extends Activity {
             state = SUB;
             
             for (int i=0;i<split;i++) { 
-                cohort.submit(new SubJob(identifier(), getContext(), tmpDir, 
+                executor.submit(new SubJob(identifier(), getContext(), tmpDir, 
                         before, after, 1000, i+1, split));
             }
         }
@@ -174,6 +174,6 @@ public class CompareJob extends Activity {
         CompareResult result = new CompareResult(input, LocalConfig.cluster(), 
                 split, detect, match, sub, post, state == DONE);
         
-        cohort.send(identifier(), parent, result);
+        executor.send(identifier(), parent, result);
     }
 }

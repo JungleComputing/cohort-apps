@@ -13,7 +13,6 @@ import ibis.cohort.MessageEvent;
 import ibis.cohort.MultiEventCollector;
 import ibis.cohort.context.OrActivityContext;
 import ibis.cohort.context.UnitActivityContext;
-import ibis.cohort.context.UnitWorkerContext;
 
 public class Main {
 

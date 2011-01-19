@@ -1,8 +1,8 @@
 package datachallenge.wf;
 
-import ibis.cohort.ActivityContext;
-import ibis.cohort.context.OrActivityContext;
-import ibis.cohort.context.UnitActivityContext;
+import ibis.constellation.ActivityContext;
+import ibis.constellation.context.OrActivityContext;
+import ibis.constellation.context.UnitActivityContext;
 
 import java.io.Serializable;
 import java.util.ArrayList;

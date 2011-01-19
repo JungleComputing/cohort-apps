@@ -28,6 +28,18 @@ public class ScriptResult implements Serializable {
     	this.exit = -1;    	
     }
 
+    public ScriptResult(String message, int id, long time, int exit) {
+    	this.message = message;
+    	this.id = id;
+    	this.time = time;
+    	
+    	this.command = null;
+    	this.out = null;
+    	this.err = null;
+    	this.exit = exit;    	
+    }
+
+    
     public ScriptResult(String message, String [] command, byte[] out, byte[] err, int exit, 
             long time, int id) {
 

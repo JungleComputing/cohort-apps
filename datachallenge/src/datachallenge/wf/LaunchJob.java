@@ -1,7 +1,7 @@
 package datachallenge.wf;
 
-import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.SimpleActivity;
+import ibis.constellation.ActivityIdentifier;
+import ibis.constellation.SimpleActivity;
 
 public class LaunchJob extends SimpleActivity {
 

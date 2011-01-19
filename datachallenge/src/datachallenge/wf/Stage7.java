@@ -1,10 +1,13 @@
 package datachallenge.wf;
 
-import ibis.cohort.ActivityContext;
-import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.SimpleActivity;
+import ibis.constellation.ActivityContext;
+import ibis.constellation.ActivityIdentifier;
+import ibis.constellation.Event;
+import ibis.constellation.SimpleActivity;
 
 public class Stage7 extends SimpleActivity {
+	
+	private static final long serialVersionUID = 9079057021343336622L;
 
 	private static String script = "stage7.sh";
 	private Job job;
@@ -29,6 +32,6 @@ public class Stage7 extends SimpleActivity {
 		System.out.println("JOB " + job.ID + " STAGE 7 FINISHED after " + (end-start) + " ms.");
 		
 		// send event to signify that we are done
-		executor.send(identifier(), parent, job);
+		executor.send(new Event(identifier(), parent, job));
 	}
 }

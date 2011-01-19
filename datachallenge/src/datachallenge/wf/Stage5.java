@@ -1,13 +1,10 @@
 package datachallenge.wf;
 
-import java.util.StringTokenizer;
-
-import ibis.cohort.Activity;
-import ibis.cohort.ActivityContext;
-import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Event;
-import ibis.cohort.MessageEvent;
-import ibis.cohort.context.UnitActivityContext;
+import ibis.constellation.Activity;
+import ibis.constellation.ActivityContext;
+import ibis.constellation.ActivityIdentifier;
+import ibis.constellation.Event;
+import ibis.constellation.context.UnitActivityContext;
 
 public class Stage5 extends Activity {
 
@@ -16,14 +13,14 @@ public class Stage5 extends Activity {
 	private Job job;
 	private ActivityIdentifier parent;
 	
-	private String tmpdir;
+//	private String tmpdir;
 
 	private int results;
 	
 	private long start;
 	
 	public Stage5(ActivityContext context, ActivityIdentifier parent, Job job) { 
-		super(context);
+		super(context, true, true);
 		this.job = job; 
 		this.parent = parent;
 	}
@@ -43,7 +40,7 @@ public class Stage5 extends Activity {
 	@Override
 	public void process(Event e) throws Exception {
 
-		ScriptResult result = (ScriptResult) ((MessageEvent) e).message;
+		ScriptResult result = (ScriptResult) e.data;
 
 		job.addResult(result);
 		
@@ -63,8 +60,7 @@ public class Stage5 extends Activity {
 			
 			job.addResult(new ScriptResult("Stage 5 finished", 0, end-start));
 
-			// NOTE: Stage 7 intentionally has rank of 1 to ensure that we finish the job ASAP.  
-			executor.submit(new Stage7(new UnitActivityContext(LocalConfig.host(), 1), parent, job));			
+			executor.submit(new Stage7(new UnitActivityContext(LocalConfig.host(), 7), parent, job));			
 			finish();			
 			
 			System.out.println("JOB " + job.ID + " STAGE 5 FINISHED after " + (end-start) + " ms.");

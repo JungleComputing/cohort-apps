@@ -2,13 +2,11 @@ package datachallenge.wf;
 
 import java.util.StringTokenizer;
 
-import ibis.cohort.Activity;
-import ibis.cohort.ActivityContext;
-import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Event;
-import ibis.cohort.MessageEvent;
-
-import ibis.cohort.context.UnitActivityContext;
+import ibis.constellation.Activity;
+import ibis.constellation.ActivityContext;
+import ibis.constellation.ActivityIdentifier;
+import ibis.constellation.Event;
+import ibis.constellation.context.UnitActivityContext;
 
 public class Stage3 extends Activity {
 
@@ -24,7 +22,7 @@ public class Stage3 extends Activity {
 	private long start;
 	
 	public Stage3(ActivityContext context, ActivityIdentifier parent, Job job) { 
-		super(context);
+		super(context, true, true);
 		this.job = job; 
 		this.parent = parent;
 	}
@@ -42,7 +40,7 @@ public class Stage3 extends Activity {
 		
 		if (result.exit != 0) { 
 			// Failed to perform matching
-			executor.send(identifier(), parent, job);
+			executor.send(new Event(identifier(), parent, job));
 			finish();
 			return;
 		}
@@ -55,6 +53,11 @@ public class Stage3 extends Activity {
 	}
 	
 	private int getTiles(ScriptResult out) {
+
+		/*
+		System.out.println("JOB " + job.ID + " STAGE 3 HARDCODED TO 6 TILES!");
+		return 6;
+		 */
 		
 		if (out.out == null) {
 			System.out.println("JOB " + job.ID + " STAGE 3 FAILED TO DETECT TILES (no output)!");
@@ -98,7 +101,7 @@ public class Stage3 extends Activity {
 	@Override
 	public void process(Event e) throws Exception {
 
-		ScriptResult result = (ScriptResult) ((MessageEvent) e).message;
+		ScriptResult result = (ScriptResult) e.data;
 
 		job.addResult(result);
 		
@@ -112,7 +115,14 @@ public class Stage3 extends Activity {
 			
 			job.tiles = getTiles(result);
 			
-			executor.submit(new Stage5(new UnitActivityContext(LocalConfig.host(), 5), parent, job));			
+			// FIXME: HACK send about 10% of work to CPU instead of GPU
+			if (LocalConfig.hasGPU() /*&& Math.random() > 0.15*/) { 
+				System.out.println("JOB " + job.ID + " SEND TO GPU BY STAGE 3");
+				executor.submit(new Stage5G(new UnitActivityContext(LocalConfig.host(), 100), parent, job));			
+			} else { 
+				System.out.println("JOB " + job.ID + " SEND TO CPU BY STAGE 3");
+				executor.submit(new Stage5(new UnitActivityContext(LocalConfig.host(), 5), parent, job));			
+			}
 			
 			System.out.println("JOB " + job.ID + " STAGE 3 FINISHED after " + (end-start) + " ms.");
 			

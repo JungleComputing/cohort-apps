@@ -13,15 +13,18 @@ import java.util.StringTokenizer;
 public class LocalConfig {
 
     public static final int DEFAULT_CONTEXT           = 0;
-    public static final int DEFAULT_CONTEXT_SORTED    = 1;
-    public static final int LOCATION_CONTEXT          = 2;
-    public static final int LOCATION_CONTEXT_SORTED   = 3;        
-    public static final int SIZE_CONTEXT              = 4;
-    public static final int SIZE_CONTEXT_SORTED       = 5;
-
+    public static final int LOCATION_CONTEXT          = 1;
+    public static final int SIZE_CONTEXT              = 2;
+	public static final int SPECIALIZED_HW            = 3;
+    
+	public static final int ANY_ORDER                 = 0;
+    public static final int BIGGEST_FIRST             = 1;
+    public static final int SMALLEST_FIRST            = 2;
+	
     private static int contextType;
-
-    private static final String DEFAULT_EXEC = "dach_NEW.sh";
+    private static int stealOrder;
+    
+    private static final String DEFAULT_EXEC = "dach_NEW2.sh";
     private static final String DEFAULT_TMP = "/tmp";
     private static final String DEFAULT_CONFIGURATION = "location_and_sorted";
 
@@ -269,19 +272,23 @@ public class LocalConfig {
         clusters = c.toArray(new String [c.size()]);
 
         contextType = DEFAULT_CONTEXT;
-
+        stealOrder = ANY_ORDER;
+        
         if (configuration == null) {
             contextType = DEFAULT_CONTEXT;
         } else if (configuration.equals("default")) {
             contextType = DEFAULT_CONTEXT;
         } else if (configuration.equals("default_sorted")) {
-            contextType = DEFAULT_CONTEXT_SORTED;
+            contextType = DEFAULT_CONTEXT;
+            stealOrder = BIGGEST_FIRST;
         } else if (configuration.equals("location")) {
             contextType = LOCATION_CONTEXT;
         } else if (configuration.equals("location_sorted")) {
-            contextType = LOCATION_CONTEXT_SORTED;
+            contextType = LOCATION_CONTEXT;
+            stealOrder = BIGGEST_FIRST;
         } else if (configuration.equals("location_sorted_fallback")) {
-            contextType = LOCATION_CONTEXT_SORTED;
+            contextType = LOCATION_CONTEXT;
+            stealOrder = BIGGEST_FIRST;
             fallback = true;            
         } else if (configuration.equals("size")) {
             contextType = SIZE_CONTEXT;
@@ -290,11 +297,20 @@ public class LocalConfig {
                 throw new Exception("Selected size context without defining sizes!");
             }        	
         } else if (configuration.equals("size_sorted")) {
-            contextType = SIZE_CONTEXT_SORTED;
-
+            contextType = SIZE_CONTEXT;
+            stealOrder = BIGGEST_FIRST;
+            
             if (sizes == null) { 
                 throw new Exception("Selected size context without defining sizes!");
             }        	
+       
+        } else if (configuration.equals("specialized")) {
+            contextType = SPECIALIZED_HW;
+            
+        } else if (configuration.equals("specialized_sorted")) {
+            contextType = SPECIALIZED_HW;
+            stealOrder = BIGGEST_FIRST;
+        
         } else { 
             throw new Exception("Unknown configuration: " + configuration);
         }
@@ -361,6 +377,10 @@ public class LocalConfig {
         return contextType;
     }
 
+    public static int getStealOrder() {
+        return stealOrder;
+    }
+    
     public static int getExecutorCount() {
 		return executorCount;
 	}
@@ -764,7 +784,7 @@ public class LocalConfig {
             long copy = System.currentTimeMillis();
 
             RunProcess p = new RunProcess(new String [] { executable, 
-                    "-w", tmpDir, tmpBefore, tmpAfter });
+                    "-w", "-c", "8", tmpDir, tmpBefore, tmpAfter });
             p.run();
 
             byte [] out = p.getStdout();

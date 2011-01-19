@@ -1,19 +1,19 @@
 package datachallenge.simple;
 
-import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Cohort;
-import ibis.cohort.CohortFactory;
-import ibis.cohort.Event;
-import ibis.cohort.Executor;
-import ibis.cohort.FlexibleEventCollector;
-import ibis.cohort.MessageEvent;
-import ibis.cohort.MultiEventCollector;
-import ibis.cohort.SimpleExecutor;
-import ibis.cohort.StealPool;
-import ibis.cohort.WorkerContext;
-import ibis.cohort.context.OrWorkerContext;
-import ibis.cohort.context.UnitActivityContext;
-import ibis.cohort.context.UnitWorkerContext;
+import ibis.constellation.ActivityIdentifier;
+import ibis.constellation.Constellation;
+import ibis.constellation.ConstellationFactory;
+import ibis.constellation.Event;
+import ibis.constellation.Executor;
+import ibis.constellation.FlexibleEventCollector;
+import ibis.constellation.MultiEventCollector;
+import ibis.constellation.SimpleExecutor;
+import ibis.constellation.StealPool;
+import ibis.constellation.StealStrategy;
+import ibis.constellation.WorkerContext;
+import ibis.constellation.context.OrWorkerContext;
+import ibis.constellation.context.UnitActivityContext;
+import ibis.constellation.context.UnitWorkerContext;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,26 +23,50 @@ public class Main {
     private static HashMap<String, Job> jobs = new HashMap<String, Job>();
 
     private static UnitActivityContext getContext(Problem p, String cluster,
-            int contextType) { 
+            int contextType, boolean ordered) { 
 
         long size = p.beforeFileSize + p.afterFileSize;
 
         switch (contextType) { 
         case LocalConfig.DEFAULT_CONTEXT:
-            return UnitActivityContext.DEFAULT;
-        case LocalConfig.DEFAULT_CONTEXT_SORTED:
-            return new UnitActivityContext("DEFAULT", size);
+        	if (!ordered) { 
+        		return UnitActivityContext.DEFAULT;
+        	} else { 
+        		return new UnitActivityContext("DEFAULT", size);
+        	} 
+        	
         case LocalConfig.LOCATION_CONTEXT:
-            return new UnitActivityContext(cluster);
-        case LocalConfig.LOCATION_CONTEXT_SORTED:
-            return new UnitActivityContext(cluster, size);
+        	if (!ordered) { 
+        		return new UnitActivityContext(cluster);
+        	} else {
+        		return new UnitActivityContext(cluster, size);
+        	}
+        
         case LocalConfig.SIZE_CONTEXT:
-            return new UnitActivityContext(getSizeTag(size));
-        case LocalConfig.SIZE_CONTEXT_SORTED:
-            return new UnitActivityContext(getSizeTag(size), size);
+    	case LocalConfig.SPECIALIZED_HW:
+        	if (!ordered) {
+        		return new UnitActivityContext(getSizeTag(size));
+        	} else { 
+        		return new UnitActivityContext(getSizeTag(size), size);
+        	}
+        	
         default:
             System.out.println("WARNING: Unknown context type " + contextType);
-        return UnitActivityContext.DEFAULT;
+            return UnitActivityContext.DEFAULT;
+        }
+    }
+       
+    private static StealStrategy getStealStrategy(int stealOrder) { 
+    	switch (stealOrder) { 
+        case LocalConfig.BIGGEST_FIRST:
+        	return StealStrategy.BIGGEST;
+        
+        case LocalConfig.ANY_ORDER:
+            return StealStrategy.ANY;
+              
+        default:
+            System.out.println("WARNING: Unknown steal strategy " + stealOrder);
+            return StealStrategy.ANY;
         }
     }
     
@@ -53,10 +77,6 @@ public class Main {
         case LocalConfig.DEFAULT_CONTEXT:
         	// NOTE, we need the cluster to get the initial 'list' job to run.  
         	return new OrWorkerContext(new UnitWorkerContext [] { new UnitWorkerContext("DEFAULT"), new UnitWorkerContext(cluster) }, true); 
-        
-        case LocalConfig.DEFAULT_CONTEXT_SORTED:
-        	// NOTE, we need the cluster to get the initial 'list' job to run.  
-        	return new OrWorkerContext(new UnitWorkerContext [] { new UnitWorkerContext("DEFAULT", UnitWorkerContext.BIGGEST), new UnitWorkerContext(cluster) }, true); 
                     
         case LocalConfig.LOCATION_CONTEXT:
         	
@@ -67,21 +87,12 @@ public class Main {
         					{ new UnitWorkerContext(cluster), new UnitWorkerContext("DEFAULT") },
         					true); 
         	}	
-        case LocalConfig.LOCATION_CONTEXT_SORTED:
         
-        	if (!fallback) { 
-        		return new UnitWorkerContext(cluster, UnitWorkerContext.BIGGEST);
-        	} else { 
-        		return new OrWorkerContext(new UnitWorkerContext [] 
-        					{ new UnitWorkerContext(cluster, UnitWorkerContext.BIGGEST), 
-        				      new UnitWorkerContext("DEFAULT", UnitWorkerContext.BIGGEST) 
-        					}, true); 
-        	}
-       
         case LocalConfig.SIZE_CONTEXT:
         	// NOTE, we need the cluster to get the initial 'list' job to run.  
         	return new OrWorkerContext(new UnitWorkerContext [] { new UnitWorkerContext(executorSize), new UnitWorkerContext(cluster) }, true); 
         
+        	/*
         case LocalConfig.SIZE_CONTEXT_SORTED:
         
         	// HACK!
@@ -116,35 +127,47 @@ public class Main {
 
         	// NOTE, we need the cluster to get the initial 'list' job to run.  
         	return new OrWorkerContext(new UnitWorkerContext [] { new UnitWorkerContext(executorSize, UnitWorkerContext.BIGGEST), new UnitWorkerContext(cluster) }, true); 
+           */
         
+        case LocalConfig.SPECIALIZED_HW:
+            	
+        	if (executorSize.equals("GPU")) { 
+           		return new OrWorkerContext(
+           				new UnitWorkerContext [] { 
+           				   new UnitWorkerContext(cluster), 
+           				   new UnitWorkerContext("GPU"),
+           				   new UnitWorkerContext("CPU") }, true); 
+        	} else { 
+          		return new OrWorkerContext(
+           				new UnitWorkerContext [] { 
+           				   new UnitWorkerContext(cluster), 
+           				   new UnitWorkerContext("CPU") }, true); 
+        	}
+        	
         default:
             System.out.println("WARNING: Unknown context type " + contextType);
             return UnitWorkerContext.DEFAULT;
         }
     }
     
-    private static void addFallBack(Job job, int contextType) { 
+    private static void addFallBack(Job job, int contextType, int stealOrder) { 
         
-        long size = job.beforeFileSize + job.afterFileSize;
-
-        switch (contextType) { 
-        case LocalConfig.LOCATION_CONTEXT:
-            job.addContext(UnitActivityContext.DEFAULT);
-            return;
-        case LocalConfig.LOCATION_CONTEXT_SORTED:
-            job.addContext(new UnitActivityContext("DEFAULT", size));
-            return;
-        default:
-            return;
+        if (contextType == LocalConfig.LOCATION_CONTEXT) { 
+       
+        	if (stealOrder == LocalConfig.BIGGEST_FIRST) { 
+        		long size = job.beforeFileSize + job.afterFileSize;
+        		job.addContext(new UnitActivityContext("DEFAULT", size));
+        	} else { 
+        		job.addContext(UnitActivityContext.DEFAULT);
+        	}
         }
     }
-
     
-    private static void processList(ProblemList l, int contextType) {
+    private static void processList(ProblemList l, int contextType, boolean ordered) {
 
         for (Problem p : l.problems) {
 
-            UnitActivityContext c = getContext(p, l.cluster, contextType); 
+            UnitActivityContext c = getContext(p, l.cluster, contextType, ordered); 
 
             Job tmp = jobs.get(p.name);
 
@@ -169,8 +192,8 @@ public class Main {
         }
 
         return null;
-    }
-
+    }   
+    
     public static void main(String [] args) {
 
         try { 
@@ -181,8 +204,6 @@ public class Main {
             String [] clusters = LocalConfig.getClusters();
 
             long start = System.currentTimeMillis();
-
-            LocalConfig.startMonitor(1000);
 
             StealPool master = new StealPool("master");
             
@@ -195,22 +216,29 @@ public class Main {
             		LocalConfig.getContextConfiguration(), 
             		LocalConfig.getExecutorType(), 
             		LocalConfig.allowFallback());
+     
+            StealStrategy st = getStealStrategy(LocalConfig.getStealOrder());
+            
+            boolean ordered = !st.equals(StealStrategy.ANY);
             
             if (LocalConfig.isMaster()) {
             	// The master sacrifes 1 executor
             	for (int i=0;i<exec-1;i++) { 
-            		e[i] = new SimpleExecutor(StealPool.NONE, master, wc);
+            		e[i] = new SimpleExecutor(StealPool.NONE, master, wc, st, st, st);
             	}
             	e[exec-1] = new SimpleExecutor(master, StealPool.NONE, 
-            				new UnitWorkerContext("master"));
+            				new UnitWorkerContext("master"), st, st, st);
             } else { 
+
+                LocalConfig.startMonitor(1000);
+
             	for (int i=0;i<exec;i++) { 
-            		e[i] = new SimpleExecutor(StealPool.NONE, master, wc);
+            		e[i] = new SimpleExecutor(StealPool.NONE, master, wc, st, st, st);
             	}
             }
             
-            Cohort cohort = CohortFactory.createCohort(e);
-            cohort.activate();
+            Constellation cn = ConstellationFactory.createConstellation(e);
+            cn.activate();
 
             if (LocalConfig.isMaster()){ 
                 // Wohoo! I'm in charge.
@@ -223,24 +251,23 @@ public class Main {
                 MultiEventCollector c = new MultiEventCollector(
                         new UnitActivityContext("master"), clusters.length);
 
-                ActivityIdentifier id = cohort.submit(c);
+                ActivityIdentifier id = cn.submit(c);
 
                 for (String cluster : clusters) { 
-                    cohort.submit(new ListJob(id, cluster));
+                    cn.submit(new ListJob(id, cluster));
                 }
 
                 // Wait for the results and merge them into a single set 
                 Event [] results = c.waitForEvents();
 
                 for (Event m : results) { 
-                    processList((ProblemList) ((MessageEvent) m).message, 
-                            contextType);
+                    processList((ProblemList) m.data, contextType, ordered);
                 }
 
                 FlexibleEventCollector f = new FlexibleEventCollector(
                         new UnitActivityContext("master"));
 
-                id = cohort.submit(f);
+                id = cn.submit(f);
 
                 int count = jobs.size();
 
@@ -250,10 +277,10 @@ public class Main {
                 for (Job job : jobs.values()) {
                     
                     if (fallback) { 
-                        addFallBack(job, contextType);
+                        addFallBack(job, contextType, LocalConfig.getStealOrder());
                     }
                     
-                    cohort.submit(new LaunchJob(id, job));
+                    cn.submit(new LaunchJob(id, job));
                 }
 
 
@@ -270,7 +297,7 @@ public class Main {
                     System.out.println((t-start) + " Master received " + tmp.length + " results");
 
                     for (Event m : tmp) { 
-                        res.add((Result) ((MessageEvent) m).message);
+                        res.add((Result) m.data);
                     }
 
                     count -= tmp.length;
@@ -282,9 +309,11 @@ public class Main {
 
             }
 
-            cohort.done();
+            cn.done();
 
-            LocalConfig.stopMonitor();
+            if (!LocalConfig.isMaster()){ 
+            	LocalConfig.stopMonitor();
+            }
             
             for (Result r : res) { 
                 System.out.println(r);

@@ -16,23 +16,27 @@ import datachallenge.wf.ScriptResult;
 public class LocalConfig {
 
 	public static final int DEFAULT_CONTEXT           = 0;
-	public static final int DEFAULT_CONTEXT_SORTED    = 1;
 	public static final int LOCATION_CONTEXT          = 2;
-	public static final int LOCATION_CONTEXT_SORTED   = 3;        
 	public static final int SIZE_CONTEXT              = 4;
-	public static final int SIZE_CONTEXT_SORTED       = 5;
-
+	public static final int HW_CONTEXT                = 6;
+	
+	public static final int ANY_ORDER                 = 1;
+	public static final int SORTED                    = 3;
+	
 	private static int contextType;
-
+	private static int stealStrategy;
+	
 	private static final String DEFAULT_TMP = "/tmp";
-	private static final String DEFAULT_CONFIGURATION = "location_and_sorted";
 
 	private static String configuration;
 
 	private static boolean configured = false;
 	private static boolean isMaster = false;
 	private static boolean fallback = false;
-
+	
+	private static boolean hasGPU = false;
+	private static boolean depthFirst = true;
+	
 	private static boolean useHTTPFileServer = false;
 	private static String httpServer;
 	private static String problemList;
@@ -62,7 +66,7 @@ public class LocalConfig {
 	private static String execDir; 
 	private static String tmpDir = DEFAULT_TMP; 
 	
-	private static String cpExec = "/bin/cp";
+//	private static String cpExec = "/bin/cp";
 
 	private static Monitor m;
 
@@ -198,6 +202,10 @@ public class LocalConfig {
 				isMaster = true;
 			} else if (tmp.equalsIgnoreCase("-fallback")) { 
 				fallback = true;
+			} else if (tmp.equalsIgnoreCase("-hasGPU")) { 
+				hasGPU = true;
+			} else if (tmp.equalsIgnoreCase("-BF")) { 
+				depthFirst = false;
 			} else if (tmp.equalsIgnoreCase("-size")) { 
 				String name = args[++i];
 				long start = Long.parseLong(args[++i]);
@@ -258,19 +266,28 @@ public class LocalConfig {
 		clusters = c.toArray(new String [c.size()]);
 
 		contextType = DEFAULT_CONTEXT;
-
+        stealStrategy = ANY_ORDER;
+		
 		if (configuration == null) {
 			contextType = DEFAULT_CONTEXT;
 		} else if (configuration.equals("default")) {
 			contextType = DEFAULT_CONTEXT;
 		} else if (configuration.equals("default_sorted")) {
-			contextType = DEFAULT_CONTEXT_SORTED;
+			contextType = DEFAULT_CONTEXT;
+			stealStrategy = SORTED;
 		} else if (configuration.equals("location")) {
 			contextType = LOCATION_CONTEXT;
 		} else if (configuration.equals("location_sorted")) {
-			contextType = LOCATION_CONTEXT_SORTED;
+			contextType = LOCATION_CONTEXT;
+			stealStrategy = SORTED;
+		} else if (configuration.equals("hw")) {
+			contextType = HW_CONTEXT;
+		} else if (configuration.equals("hw_sorted")) {
+			contextType = HW_CONTEXT;
+			stealStrategy = SORTED;
 		} else if (configuration.equals("location_sorted_fallback")) {
-			contextType = LOCATION_CONTEXT_SORTED;
+			contextType = LOCATION_CONTEXT;
+			stealStrategy = SORTED;
 			fallback = true;            
 		} else if (configuration.equals("size")) {
 			contextType = SIZE_CONTEXT;
@@ -279,7 +296,8 @@ public class LocalConfig {
 				throw new Exception("Selected size context without defining sizes!");
 			}        	
 		} else if (configuration.equals("size_sorted")) {
-			contextType = SIZE_CONTEXT_SORTED;
+			contextType = SIZE_CONTEXT;
+			stealStrategy = SORTED;
 
 			if (sizes == null) { 
 				throw new Exception("Selected size context without defining sizes!");
@@ -350,6 +368,11 @@ public class LocalConfig {
 		return contextType;
 	}
 
+	public static int getStealStrategy() {
+		return stealStrategy;
+	}
+
+	
 	public static int getExecutorCount() {
 		return executorCount;
 	}
@@ -385,9 +408,11 @@ public class LocalConfig {
 		return file.exists() && file.canRead() && !file.isDirectory();
 	}
 
+	/*
 	private static boolean fileExists(String file) {
 		return fileExists(new File(file));
 	}
+    */
 
 	private static String problemName(String filename) { 
 		return filename.substring(0, filename.length()-8);
@@ -540,6 +565,7 @@ public class LocalConfig {
 		return p.getExitStatus();               
 	}
 
+	/*
 	private static boolean localCopy(String path, String localFile) { 
 
 		long start = System.currentTimeMillis();
@@ -569,7 +595,7 @@ public class LocalConfig {
 
 		return true;            
 	}
-
+    */
 	/*
     private static boolean remoteCopy(String [] remoteFiles, String localDir) 
         throws Exception {
@@ -591,7 +617,7 @@ public class LocalConfig {
     }
 	 */
 
-
+	/*
 	private static boolean remoteCopy(String remoteFile, String localFile) 
 	throws Exception {
 
@@ -620,7 +646,7 @@ public class LocalConfig {
 
 		return true;            
 	}
-
+    */
 	private static boolean remoteCopy(String server, String remoteFile, String localFile) { 
 
 		long start = System.currentTimeMillis();
@@ -950,4 +976,13 @@ public class LocalConfig {
 	public static int getExecutorPoolSize() {
 		return executorPoolSize;
 	}
+
+	public static boolean hasGPU() {
+		return hasGPU;
+	}
+
+	public static boolean depthFirst() {
+		return depthFirst;
+	}
+
 }

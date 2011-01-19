@@ -3,12 +3,10 @@ package datachallenge.wf;
 import java.io.File;
 
 import datachallenge.wf.LocalConfig;
-import ibis.cohort.Activity;
-import ibis.cohort.ActivityContext;
-import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Event;
-import ibis.cohort.MessageEvent;
-import ibis.cohort.context.UnitActivityContext;
+import ibis.constellation.Activity;
+import ibis.constellation.ActivityIdentifier;
+import ibis.constellation.Event;
+import ibis.constellation.context.UnitActivityContext;
 
 public class Stage1 extends Activity {
 
@@ -22,7 +20,7 @@ public class Stage1 extends Activity {
 	private long start;
 	
 	public Stage1(ActivityIdentifier parent, Job job) { 
-		super(new UnitActivityContext(LocalConfig.host(), 1), true);
+		super(new UnitActivityContext(LocalConfig.host(), 1), true, true);
 		this.job = job; 
 		this.parent = parent;
 	}
@@ -46,12 +44,11 @@ public class Stage1 extends Activity {
 			System.out.println("ERROR: JOB " + job.ID + " STAGE 1 failed to copy input files!");
 
 			job.addResult(error);
-			executor.send(identifier(), parent, job);
+			executor.send(new Event(identifier(), parent, job));
 			finish();
 
 		} else { 		
 			// spawn stage2
-			
 			executor.submit(new Stage2(new UnitActivityContext(LocalConfig.host(), 2), identifier(), job, 0));
 			executor.submit(new Stage2(new UnitActivityContext(LocalConfig.host(), 2), identifier(), job, 1));
 			suspend();
@@ -61,8 +58,8 @@ public class Stage1 extends Activity {
 	@Override
 	public void process(Event e) throws Exception {
 
-		ScriptResult result = (ScriptResult) ((MessageEvent) e).message;
-
+		ScriptResult result = (ScriptResult) e.data;
+		
 		job.addResult(result);
 		
 		results++;

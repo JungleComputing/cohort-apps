@@ -1,8 +1,9 @@
 package datachallenge.simple;
 
-import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.SimpleActivity;
-import ibis.cohort.context.UnitActivityContext;
+import ibis.constellation.ActivityIdentifier;
+import ibis.constellation.Event;
+import ibis.constellation.SimpleActivity;
+import ibis.constellation.context.UnitActivityContext;
 
 public class ListJob extends SimpleActivity {
     
@@ -14,6 +15,6 @@ public class ListJob extends SimpleActivity {
 
     @Override
     public void simpleActivity() throws Exception {
-        executor.send(identifier(), parent, LocalConfig.listProblems());
+        executor.send(new Event(identifier(), parent, LocalConfig.listProblems()));
     }
 }

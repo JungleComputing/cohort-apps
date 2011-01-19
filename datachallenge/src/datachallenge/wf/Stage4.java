@@ -1,8 +1,9 @@
 package datachallenge.wf;
 
-import ibis.cohort.ActivityContext;
-import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.SimpleActivity;
+import ibis.constellation.ActivityContext;
+import ibis.constellation.ActivityIdentifier;
+import ibis.constellation.Event;
+import ibis.constellation.SimpleActivity;
 
 public class Stage4 extends SimpleActivity {
 	
@@ -35,6 +36,6 @@ public class Stage4 extends SimpleActivity {
 	                LocalConfig.getScript(script), job.tmpdir, file }, id); 
 	        
 		// send event to signify that we are done
-		executor.send(identifier(), parent, result);
+		executor.send(new Event(identifier(), parent, result));
 	}
 }

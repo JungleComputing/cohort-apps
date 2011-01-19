@@ -1,7 +1,8 @@
 package datachallenge.simple;
 
-import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.SimpleActivity;
+import ibis.constellation.ActivityIdentifier;
+import ibis.constellation.Event;
+import ibis.constellation.SimpleActivity;
 
 public class CompareJob extends SimpleActivity {
 
@@ -16,6 +17,6 @@ public class CompareJob extends SimpleActivity {
 
     @Override
     public void simpleActivity() throws Exception {
-        executor.send(identifier(), parent, LocalConfig.compare(job));
+        executor.send(new Event(identifier(), parent, LocalConfig.compare(job)));
     }
 }

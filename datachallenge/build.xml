@@ -3,7 +3,7 @@
     default="build"
     basedir=".">
 
-    <property name="jar" value="dach-cohort.jar"/>
+    <property name="jar" value="dach-constellation.jar"/>
 
     <property name="srcdir" value="./src"/>
     <property name="builddir" value="./build"/>

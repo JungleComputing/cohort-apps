@@ -1,11 +1,13 @@
 package barnes;
 
-import ibis.cohort.Cohort;
-import ibis.cohort.CohortFactory;
-import ibis.cohort.Context;
-import ibis.cohort.MessageEvent;
-import ibis.cohort.SingleEventCollector;
-import ibis.cohort.context.UnitContext;
+import ibis.constellation.Constellation;
+import ibis.constellation.ConstellationFactory;
+import ibis.constellation.Executor;
+import ibis.constellation.SimpleExecutor;
+import ibis.constellation.SingleEventCollector;
+import ibis.constellation.StealStrategy;
+import ibis.constellation.context.UnitActivityContext;
+import ibis.constellation.context.UnitWorkerContext;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -46,17 +48,17 @@ import java.util.Arrays;
 
     private transient RunParameters params;
 
-    private final Cohort cohort;
+    private final Constellation c;
 
-    BarnesHut(Cohort cohort, int n, RunParameters params) {
-        this.cohort = cohort;
+    BarnesHut(Constellation c, int n, RunParameters params) {
+        this.c = c;
         this.params = params;
         bodyArray = new Plummer().generate(n);
     }
 
-    BarnesHut(Cohort cohort, Reader r, RunParameters params) throws IOException {
+    BarnesHut(Constellation cohort, Reader r, RunParameters params) throws IOException {
 
-        this.cohort = cohort;
+        this.c = cohort;
 
         BufferedReader br = new BufferedReader(r);
         StreamTokenizer tokenizer = new StreamTokenizer(br);
@@ -304,7 +306,7 @@ import java.util.Arrays;
 
         printMemStats("post bodies");
 
-        cohort.activate();
+        c.activate();
         
         start = System.currentTimeMillis();
 
@@ -325,12 +327,16 @@ import java.util.Arrays;
             case RunParameters.IMPL_NTC:
             case RunParameters.IMPL_FULLTREE:
 
+            	BodyTreeNode tmp = bodies.getRoot();
+            	
                 SingleEventCollector a = new SingleEventCollector();
-                cohort.submit(a);
-                cohort.submit(new BarnesJob(UnitContext.DEFAULT, a.identifier(), 
-                        bodies.getRoot(), bodies.getRoot(), params));
+                c.submit(a);
+                
+                // FIXME: maybe use tmp.bodyCount * tmp.bodyCount as rank ?
+                c.submit(new BarnesJob(new UnitActivityContext("DEFAULT", tmp.bodyCount), 
+                		a.identifier(), tmp, tmp, params));
 
-                result = (BodyUpdates) ((MessageEvent) a.waitForEvent()).message;        
+                result = (BodyUpdates) a.waitForEvent().data;        
                 // result = doBarnesNTC(bodies.getRoot(), bodies.getRoot(), params);
                 break;
                 /* case IMPL_SO:
@@ -474,8 +480,10 @@ import java.util.Arrays;
         }
     }
 
+    
     public static void printMemStats(String prefix) {
-        if(false) {
+    /*
+    	if(false) {
             Runtime r = Runtime.getRuntime();
 
             System.gc();
@@ -485,6 +493,7 @@ import java.util.Arrays;
             System.err.println(prefix + ": free = " + free + " max = " + max
                     + " total = " + total);
         }
+    */
     }
 
     public static void main(String argv[]) {
@@ -502,17 +511,9 @@ import java.util.Arrays;
         double endTime = 0.175;
         int iterations = -1;
         int impl = RunParameters.IMPL_NTC;
-
-        Cohort cohort = null;
         
-        try { 
-            cohort = CohortFactory.createCohort();
-        } catch (Exception e) {
-            System.err.println("Oops: " + e);
-            e.printStackTrace(System.err);
-            System.exit(1);
-        }
-
+        int executors = -1;
+        
         printMemStats("start");
 
         //parse arguments
@@ -570,6 +571,8 @@ import java.util.Arrays;
                 dt = Double.parseDouble(argv[++i]);
             } else if (argv[i].equals("-eps")) {
                 soft = Double.parseDouble(argv[++i]);
+            } else if (argv[i].equals("-exec")) {
+                executors = Integer.parseInt(argv[++i]);
             } else if (argv[i].equals("-input")) {
                 try {
                     rdr = new FileReader(argv[++i]);
@@ -613,9 +616,31 @@ import java.util.Arrays;
             nBodies = 3000;
         }
 
+        if (executors < 0) { 
+        	System.err.println("Invalid number of executors/machine, assuming 1...");
+        	executors = 1;
+        }
+        
         RunParameters params = new RunParameters(theta, dt, soft,
                 maxBodiesPerLeaf, spawn_min, useDoubleUpdates, startTime, endTime,
                 iterations, impl);
+        
+        Executor [] e = new Executor[executors];
+        
+        for (int i=0;i<executors;i++) { 
+            e[i] = new SimpleExecutor(new UnitWorkerContext("DEFAULT"), 
+            		StealStrategy.SMALLEST, StealStrategy.BIGGEST, StealStrategy.BIGGEST);
+        }
+        
+        Constellation cohort = null;
+        
+        try { 
+            cohort = ConstellationFactory.createConstellation(e);
+        } catch (Exception ex) {
+            System.err.println("Oops: " + ex);
+            ex.printStackTrace(System.err);
+            System.exit(1);
+        }
 
         if (cohort.isMaster()) { 
             if (rdr != null) {
@@ -624,15 +649,13 @@ import java.util.Arrays;
                 }
                 try {
                     new BarnesHut(cohort, rdr, params).run();
-                } catch (IOException e) {
-                    throw new NumberFormatException(e.getMessage());
+                } catch (IOException ex) {
+                    throw new NumberFormatException(ex.getMessage());
                 }
             } else {
                 new BarnesHut(cohort, nBodies, params).run();
             }
         } 
-            
-        
         
         cohort.done();
     }

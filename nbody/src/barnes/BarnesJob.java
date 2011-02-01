@@ -1,11 +1,10 @@
 package barnes;
 
-import ibis.cohort.Activity;
-import ibis.cohort.ActivityIdentifier;
-import ibis.cohort.Context;
-import ibis.cohort.Event;
-import ibis.cohort.MessageEvent;
-import ibis.cohort.context.UnitContext;
+import ibis.constellation.Activity;
+import ibis.constellation.ActivityContext;
+import ibis.constellation.ActivityIdentifier;
+import ibis.constellation.Event;
+import ibis.constellation.context.UnitActivityContext;
 
 public class BarnesJob extends Activity {
 
@@ -22,9 +21,9 @@ public class BarnesJob extends Activity {
     private BodyUpdates [] subResults;
     private int count;
     
-    protected BarnesJob(Context context, ActivityIdentifier parent, 
+    protected BarnesJob(ActivityContext context, ActivityIdentifier parent, 
             BodyTreeNode me, BodyTreeNode tree, RunParameters params) {
-        super(context);
+        super(context, true);
         
         this.parent = parent;
         this.me = me;
@@ -72,9 +71,10 @@ public class BarnesJob extends Activity {
                         (params.IMPLEMENTATION == RunParameters.IMPL_FULLTREE 
                                 || ch == tree) 
                                 ? tree : new BodyTreeNode(tree, ch);
-                
-                cohort.submit(new BarnesJob(UnitContext.DEFAULT, identifier(),  
-                        ch, necessaryTree, params));
+               
+                // FIXME: maybe use ch.bodyCount * necessaryTree.bodyCount as rank ?
+                executor.submit(new BarnesJob(new UnitActivityContext("DEFAULT", ch.bodyCount), 
+                		identifier(), ch, necessaryTree, params));
             }
         }
 
@@ -94,7 +94,7 @@ public class BarnesJob extends Activity {
     @Override
     public void process(Event e) throws Exception {
        
-       subResults[count++] = (BodyUpdates) ((MessageEvent) e).message;
+       subResults[count++] = (BodyUpdates) e.data;
         
        if (count == subResults.length) { 
            result = result.combineResults(subResults);
@@ -106,7 +106,7 @@ public class BarnesJob extends Activity {
     
     @Override
     public void cleanup() throws Exception {
-        cohort.send(identifier(), parent, result);
+        executor.send(new Event(identifier(), parent, result));
     }
 
     @Override
